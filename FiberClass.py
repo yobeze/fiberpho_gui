@@ -78,6 +78,7 @@ class fiberObj:
         self.fpho_data_dict = data_dict
         self.fpho_data_df = pd.DataFrame.from_dict(data_dict)
         
+        
      
     ##Helper Functions   
     def fit_exp(self, values, a, b, c, d, e):
@@ -396,6 +397,60 @@ class fiberObj:
         
         else:
             raise error("Invalid input")
+            
+            
+    # ----------------------------------------------------- # 
+    # Behavior Functions
+    # ----------------------------------------------------- # 
+
+    def import_behavior_data(BORIS_filename, fdata):
+    """Takes a file name, returns a dataframe of parsed data
+
+        Parameters
+        ----------
+        BORIS_filename: string
+                        The path to the CSV file
+
+        Returns:
+        --------
+        behaviorData: pandas dataframe
+                contains:
+                     Time(total msec), Time(sec), Subject,
+                     Behavior, Status
+        """
+    
+    # Open file, catch errors
+    try:
+        BORISData = pd.read_csv(BORIS_filename, header=15)  # starts at data
+    except FileNotFoundError:
+        print("Could not find file: " + BORIS_filename)
+        sys.exit(1)
+    except PermissionError:
+        print("Could not access file: " + BORIS_filename)
+        sys.exit(2)
+        
+    UniqueBehaviors=BORISData['Behavior'].unique()
+    
+    for beh in UniqueBehaviors:
+        IdxOfBeh = [i for i in range(len(BORISData['Behavior'])) if BORISData.loc[i, 'Behavior'] == beh]                    
+        j=0
+        fdata[beh]=False
+        while j < len(IdxOfBeh):
+            if BORISData.loc[(IdxOfBeh[j]), 'Status']=='POINT': 
+                pointIdx=fdata['fTimeGreen'].searchsorted(BORISData.loc[IdxOfBeh[j],'Time'])
+                fdata.loc[pointIdx, beh]=True
+                j=j+1
+            elif BORISData.loc[(IdxOfBeh[j]), 'Status']=='START' and BORISData.loc[(IdxOfBeh[j+1]), 'Status']=='STOP':
+                startIdx=fdata['fTimeGreen'].searchsorted(BORISData.loc[IdxOfBeh[j],'Time'])
+                endIdx=fdata['fTimeGreen'].searchsorted(BORISData.loc[IdxOfBeh[j+1],'Time'])
+                fdata.loc[startIdx:endIdx, beh]=True
+                j=j+2
+            else: 
+                print("\nStart and stops for state behavior:" + beh + " are not paired correctly.\n")
+                sys.exit()
+    return(fdata)
+    
+    
         
 
 # def new_exp(self):
