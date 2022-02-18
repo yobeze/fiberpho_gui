@@ -15,6 +15,9 @@ from scipy.optimize import curve_fit
 from plotly.subplots import make_subplots
 from pathlib import Path
 import panel as pn
+from statistics import mean
+import matplotlib.pyplot as plt
+import scipy.stats as ss
 
 pn.extension()
 
@@ -379,102 +382,165 @@ class fiberObj:
             
         return fig
     
-    def display(self, num):
-        #Prints/displays relevant info according to function number passed in
-        if num == 1:
-            #Only works if plot_fit function runs first to initialise lists
-            print(self.sig_fit_coefficients)
-            print(self.ref_fit_coefficients)
-            print(self.sig_to_ref_coefficients)
-            
-        elif num == 2:
-            print(self.fpho_data_df.head(5))
-            # head = list(self.fpho_data_dict)[:1]
-            # print(head)
-        
-        elif num == 3:
-            print("Yurrrr")
-        
-        else:
-            raise error("Invalid input")
-            
-            
+
     # ----------------------------------------------------- # 
     # Behavior Functions
     # ----------------------------------------------------- # 
 
-    def import_behavior_data(BORIS_filename, fdata):
-    """Takes a file name, returns a dataframe of parsed data
+    def import_behavior_data(self, BORIS_filename):
+        """Takes a file name, returns a dataframe of parsed data
 
-        Parameters
-        ----------
-        BORIS_filename: string
-                        The path to the CSV file
+            Parameters
+            ----------
+            BORIS_filename: string
+                            The path to the CSV file
 
-        Returns:
-        --------
-        behaviorData: pandas dataframe
-                contains:
-                     Time(total msec), Time(sec), Subject,
-                     Behavior, Status
-        """
+            Returns:
+            --------
+            behaviorData: pandas dataframe
+                    contains:
+                         Time(total msec), Time(sec), Subject,
+                         Behavior, Status
+            """
+
+        # Open file, catch errors
+        try:
+            BORISData = pd.read_csv(BORIS_filename, header=15)  # starts at data
+        except FileNotFoundError:
+            print("Could not find file: " + BORIS_filename)
+            sys.exit(1)
+        except PermissionError:
+            print("Could not access file: " + BORIS_filename)
+            sys.exit(2)
+
+        UniqueBehaviors=BORISData['Behavior'].unique()
+
+        for beh in UniqueBehaviors:
+            IdxOfBeh = [i for i in range(len(BORISData['Behavior'])) if BORISData.loc[i, 'Behavior'] == beh]                    
+            j=0
+            self.fpho_data_df[beh]=False
+            while j < len(IdxOfBeh):
+                if BORISData.loc[(IdxOfBeh[j]), 'Status']=='POINT': 
+                    pointIdx=self.fpho_data_df['time_green'].searchsorted(BORISData.loc[IdxOfBeh[j],'Time'])
+                    self.fpho_data_df.loc[pointIdx, beh]=True
+                    j=j+1
+                elif BORISData.loc[(IdxOfBeh[j]), 'Status']=='START' and BORISData.loc[(IdxOfBeh[j+1]), 'Status']=='STOP':
+                    startIdx=self.fpho_data_df['time_green'].searchsorted(BORISData.loc[IdxOfBeh[j],'Time'])
+                    endIdx=self.fpho_data_df['time_green'].searchsorted(BORISData.loc[IdxOfBeh[j+1],'Time'])
+                    self.fpho_data_df.loc[startIdx:endIdx, beh]=True
+                    j=j+2
+                else: 
+                    print("\nStart and stops for state behavior:" + beh + " are not paired correctly.\n")
+                    sys.exit()
+
+        return
     
-    # Open file, catch errors
-    try:
-        BORISData = pd.read_csv(BORIS_filename, header=15)  # starts at data
-    except FileNotFoundError:
-        print("Could not find file: " + BORIS_filename)
-        sys.exit(1)
-    except PermissionError:
-        print("Could not access file: " + BORIS_filename)
-        sys.exit(2)
+    
         
-    UniqueBehaviors=BORISData['Behavior'].unique()
+    def plot_behavior(self, key, channels):
+        fig = make_subplots(rows=len(channels), cols=1, subplot_titles=[channel for channel in channels], shared_xaxes=True)
+        for i, channel in enumerate(channels):
+            fig.add_trace(
+                go.Scatter(
+                x=self.fpho_data_df['time_green'],
+                y=self.fpho_data_df[channel],
+                mode="lines",
+                line=go.scatter.Line(color="Green"),
+                name =channel,
+                showlegend=True), row=i+1, col=1
+                )
+            behaviors = self.fpho_data_df.select_dtypes(include=['bool']).columns
+            colors=['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52']
+            for j, beh in enumerate(behaviors):
+                flag = False
+                for k in range(len(self.fpho_data_df[channel])):
+                    if self.fpho_data_df.at[k, beh] == True:
+                        if flag == False:
+                            start = self.fpho_data_df.at[k, 'time_green'] 
+                            flag = True
+                    else:
+                        if flag == True:
+                            end = self.fpho_data_df.at[k, 'time_green'] 
+                            fig.add_vrect(
+                                x0=start, x1=end, opacity=0.75,
+                                line_width=1, 
+                                layer="below",
+                                fillcolor=colors[j%10],
+                                row=i+1, col=1,
+                                name=beh
+                                )
+                            flag = False
+                if flag == True:
+                    end = self.fpho_data_df.at[k, 'time_green'] 
+                    fig.add_vrect( x0=start, x1=end, 
+                            opacity=0.75,
+                            layer="below",
+                            line_width=1, 
+                            fillcolor=colors[j%10],
+                            row=i+1, col=1,
+                            name=beh
+                            )
+                fig.add_annotation(xref="x domain", yref="y domain",
+                    x=1, 
+                    y=(j+1)/len(behaviors),
+                    text=beh,
+                    bgcolor = colors[j%10],
+                    showarrow=False,
+                    row=i+1, col=1
+                    )
+        # fig.show()
+        return fig
     
-    for beh in UniqueBehaviors:
-        IdxOfBeh = [i for i in range(len(BORISData['Behavior'])) if BORISData.loc[i, 'Behavior'] == beh]                    
-        j=0
-        fdata[beh]=False
-        while j < len(IdxOfBeh):
-            if BORISData.loc[(IdxOfBeh[j]), 'Status']=='POINT': 
-                pointIdx=fdata['fTimeGreen'].searchsorted(BORISData.loc[IdxOfBeh[j],'Time'])
-                fdata.loc[pointIdx, beh]=True
-                j=j+1
-            elif BORISData.loc[(IdxOfBeh[j]), 'Status']=='START' and BORISData.loc[(IdxOfBeh[j+1]), 'Status']=='STOP':
-                startIdx=fdata['fTimeGreen'].searchsorted(BORISData.loc[IdxOfBeh[j],'Time'])
-                endIdx=fdata['fTimeGreen'].searchsorted(BORISData.loc[IdxOfBeh[j+1],'Time'])
-                fdata.loc[startIdx:endIdx, beh]=True
-                j=j+2
-            else: 
-                print("\nStart and stops for state behavior:" + beh + " are not paired correctly.\n")
-                sys.exit()
-    return(fdata)
     
-    
-        
-
-# def new_exp(self):
-#         entry_fields = 'Fiber Num', 'Animal Num', 'Exp. Date', 'Exp. Time'
-#         file_path = "/Users/yobae/Desktop/CS Stuff/fiberphotometry-master/Python/Yobe_test",
-#         # filetypes = (("CSV files", "*.csv"),))
-#         files = 
-#         # Open file, catch errors
-#         if file is not None: 
-#             try:
-#                 self.df_test = pd.read_csv(file)
-#             except FileNotFoundError:
-#                 print("Could not find file: " + file)
-#                 sys.exit(1)
-#             except PermissionError:
-#                 print("Could not access file: " + file)
-#                 sys.exit(2)
-#         if not self.df_test.empty:
-#             ents = self.makeform(entry_fields)
-            
-#             self.new_exp_button.pack_forget()
-#             # self.new_exp_button.grid_forget()
-#             # self.open_pickle_button.grid_forget()
-#             self.open_pickle_button.pack_forget()
-#             print(ents)
-#             self.controller.bind("<Return>", (lambda event, e = ents: self.user_input(e)))
-#             # root.bind('<Return>', (lambda event, e = ents: fetch(e)))
+    def plot_zscore(self, key, channels, behs):   
+    """Takes a dataframe and creates plot of z-scores for
+        each time a select behavior occurs with the avg
+        z-score and SEM
+    """
+    for channel in channels:
+        for beh in behs:
+            BehTimes=list(self.fpho_data_df[(self.fpho_data_df[beh]==True)]['time_green'])
+            fig = make_subplots(rows=1, cols=2, subplot_titles=('Full trace with events', 'average'))
+            fig.add_trace(
+                go.Scatter(
+                x=self.fpho_data_df['time_green'],
+                y=self.fpho_data_df[channel],
+                mode="lines",
+                line=go.scatter.Line(color="Green"),
+                name =channel,
+                showlegend=True), row=1, col=1
+            )
+            sum=[]
+            zscoresum=[]
+            for time in BehTimes:
+                tempy=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),channel].values.tolist()
+                if len(sum)>1:
+                    sum = [sum[i] + tempy[i] for i in range(len(tempy))]
+                else:
+                    sum=tempy
+                x=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),'time_green']
+                fig.add_vline(x=time, line_dash="dot", row=1, col=1)
+                fig.add_trace(
+                    go.Scatter( 
+                    x=x-time,
+                    y=ss.zscore(self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),channel]),
+                    mode="lines",
+                    line=dict(color="Black", width=0.5, dash = 'dot'),
+                    name =channel,
+                    showlegend=False), row=1, col=2
+                )
+            fig.add_vline(x=0, line_dash="dot", row=1, col=2)
+            fig.add_trace(
+                go.Scatter( 
+                x=x-time,
+                y=ss.zscore([i/len(BehTimes) for i in sum]),
+                mode="lines",
+                line=dict(color="Red", width=3),
+                name =channel,
+                showlegend=False), row=1, col=2
+                )
+            fig.update_layout(
+            title= beh + ' overlaid on ' + channel + ' for animal ' +str(self.fpho_data_df['animalID'][0]) + ' on ' + str(self.fpho_data_df['date'][0]),
+            xaxis_title='Time')
+            fig.show()
+    return

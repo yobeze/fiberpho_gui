@@ -60,6 +60,7 @@ def import_behavior_data(BORIS_filename, fdata):
                 sys.exit()
     return(fdata)
 
+
 def plot_behavior(fdata, key, channels):
     fig = make_subplots(rows=len(channels), cols=1, subplot_titles=[channel for channel in channels], shared_xaxes=True)
     for i, channel in enumerate(channels):
