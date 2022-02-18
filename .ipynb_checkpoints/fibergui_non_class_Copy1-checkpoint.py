@@ -27,7 +27,7 @@ from scipy.optimize import curve_fit
 from plotly.subplots import make_subplots
 from pathlib import Path
 
-import visualization
+# import visualization
 
 from tornado.ioloop import IOLoop
 # from setup_stuff import read_csv, createObj
@@ -139,10 +139,10 @@ template.sidebar.append(upload_box)
 template.main.append(visuals)
 template.servable()
 
-# server = pn.serve(template, start = False, show = False, websocket_max_message_size = 10485760000,
-#                   verbose = True,
-#                   threaded = False
-#                  )
+server = pn.serve(template, start = False, show = False, websocket_max_message_size = 10485760000,
+                  verbose = True,
+                  threaded = False
+                 )
 
 # server.start()
 # template.main.append(visuals)

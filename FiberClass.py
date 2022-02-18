@@ -493,54 +493,106 @@ class fiberObj:
     
     
     def plot_zscore(self, key, channels, behs):   
-    """Takes a dataframe and creates plot of z-scores for
-        each time a select behavior occurs with the avg
-        z-score and SEM
-    """
-    for channel in channels:
-        for beh in behs:
-            BehTimes=list(self.fpho_data_df[(self.fpho_data_df[beh]==True)]['time_green'])
-            fig = make_subplots(rows=1, cols=2, subplot_titles=('Full trace with events', 'average'))
-            fig.add_trace(
-                go.Scatter(
-                x=self.fpho_data_df['time_green'],
-                y=self.fpho_data_df[channel],
-                mode="lines",
-                line=go.scatter.Line(color="Green"),
-                name =channel,
-                showlegend=True), row=1, col=1
-            )
-            sum=[]
-            zscoresum=[]
-            for time in BehTimes:
-                tempy=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),channel].values.tolist()
-                if len(sum)>1:
-                    sum = [sum[i] + tempy[i] for i in range(len(tempy))]
-                else:
-                    sum=tempy
-                x=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),'time_green']
-                fig.add_vline(x=time, line_dash="dot", row=1, col=1)
+        """Takes a dataframe and creates plot of z-scores for
+            each time a select behavior occurs with the avg
+            z-score and SEM
+        """
+        for channel in channels:
+            for beh in behs:
+                BehTimes=list(self.fpho_data_df[(self.fpho_data_df[beh]==True)]['time_green'])
+                fig = make_subplots(rows=1, cols=2, subplot_titles=('Full trace with events', 'average'))
+                fig.add_trace(
+                    go.Scatter(
+                    x=self.fpho_data_df['time_green'],
+                    y=self.fpho_data_df[channel],
+                    mode="lines",
+                    line=go.scatter.Line(color="Green"),
+                    name =channel,
+                    showlegend=True), row=1, col=1
+                )
+                sum=[]
+                zscoresum=[]
+                for time in BehTimes:
+                    tempy=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(
+                    time-1):self.fpho_data_df['time_green'].searchsorted(time+5),channel].values.tolist()
+                    if len(sum)>1:
+                        sum = [sum[i] + tempy[i] for i in range(len(tempy))]
+                    else:
+                        sum=tempy
+                    x=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(
+                    time-1):self.fpho_data_df['time_green'].searchsorted(time+5),'time_green']
+                    fig.add_vline(x=time, line_dash="dot", row=1, col=1)
+                    fig.add_trace(
+                        go.Scatter( 
+                        x=x-time,
+                        y=ss.zscore(self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(
+                        time-1):self.fpho_data_df['time_green'].searchsorted(time+5),channel]),
+                        mode="lines",
+                        line=dict(color="Black", width=0.5, dash = 'dot'),
+                        name =channel,
+                        showlegend=False), row=1, col=2
+                    )
+                fig.add_vline(x=0, line_dash="dot", row=1, col=2)
                 fig.add_trace(
                     go.Scatter( 
                     x=x-time,
-                    y=ss.zscore(self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),channel]),
+                    y=ss.zscore([i/len(BehTimes) for i in sum]),
                     mode="lines",
-                    line=dict(color="Black", width=0.5, dash = 'dot'),
+                    line=dict(color="Red", width=3),
                     name =channel,
                     showlegend=False), row=1, col=2
-                )
-            fig.add_vline(x=0, line_dash="dot", row=1, col=2)
+                    )
+                fig.update_layout(
+                title = beh + ' overlaid on ' + channel + ' for animal ' +str(self.fpho_data_df['animalID'][0]) + ' on ' 
+                + str(self.fpho_data_df['date'][0]),
+                xaxis_title='Time')
+                # fig.show()
+        return fig
+    
+        def plot_FFT(df, channels):
+            for channel in channels:
+                our_channels = [col for col in df.columns if channel + ' final normalized' in col]
+            sig1 = df[our_channels[0]]
+            sig2 = df[our_channels[1]]
+            time = df['fTimeGreen']
+            # Number of sample points
+            N = len(sig1)
+            #sampling rate
+            T=N/(time.iloc[-1]-time.iloc[0])
+            y1 = np.square(np.abs(np.fft.rfft(sig1.tolist())))
+            y2 = np.square(np.abs(np.fft.rfft(sig2.tolist())))
+            xf = np.linspace(0, T/2, len(y1))
+
+            fig = make_subplots(rows=1, cols=1)
             fig.add_trace(
-                go.Scatter( 
-                x=x-time,
-                y=ss.zscore([i/len(BehTimes) for i in sum]),
+                go.Scatter(
+                x=xf,
+                y=y1,
                 mode="lines",
-                line=dict(color="Red", width=3),
-                name =channel,
-                showlegend=False), row=1, col=2
-                )
-            fig.update_layout(
-            title= beh + ' overlaid on ' + channel + ' for animal ' +str(self.fpho_data_df['animalID'][0]) + ' on ' + str(self.fpho_data_df['date'][0]),
-            xaxis_title='Time')
+                name ='animal 2 at' + str(T),
+                showlegend=True), row=1, col=1
+            )
+            fig.add_trace(
+                go.Scatter(
+                x=xf,
+                y=y2,
+                mode="lines",
+                name ='animal 1',
+                showlegend=True), row=1, col=1
+            )   
             fig.show()
-    return
+
+    def behavior_on(df, beh):
+        behaviorname=''
+        flag=False
+        for name in beh:
+            behaviorname= behaviorname + ' ,' + name
+            if name in df.columns:
+                flag=True
+        if flag:
+            behaviorSlice=df.loc[:,beh]
+            TrueTimes = behaviorSlice.any(axis=1)
+        else:
+            print(behaviorname + ' not found in this trial')
+
+        return(TrueTimes, flag)
