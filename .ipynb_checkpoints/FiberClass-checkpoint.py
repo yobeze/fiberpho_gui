@@ -176,7 +176,7 @@ class fiberObj:
 
     
     #Plot fitted exp function
-    def plot_fitted_exp(self):
+    def normalize_a_signal(self, signal, reference):
 
         """Creates a plot normalizing 1 fiber data to an
             exponential of the form y=A*exp(-B*X)+C*exp(-D*x)
@@ -197,188 +197,189 @@ class fiberObj:
         # for the coefficients - B and D (the second and fourth
         # inputs for p0) must be negative, while A and C (the
         # first and third inputs for p0) must be positive
-
-        signals = ['green_green']
-        references = ['green_iso']
         
+        Channels={'Green':'green_green', 'Red':'red_red', 'Isosbestic':'green_iso'}
+        Times={'Green':'time_green', 'Red':'time_red', 'Isosbestic':'time_iso'}
+        
+     
         fig = make_subplots(rows = 3, cols = 2, x_title = 'Time(s)', subplot_titles=("Biexponential Fitted to Signal", "Signal Normalized to Biexponential", "Biexponential Fitted to Ref", "Reference Normalized to Biexponential", "Reference Linearly Fitted to Signal", "Final Normalized Signal"), shared_xaxes=True, vertical_spacing=0.1)
         
-        for i in range(len(signals)):
-            time = self.fpho_data_df['time_green']
-            sig = self.fpho_data_df['green_green']
-            popt, pcov = curve_fit(self.fit_exp, time, sig, p0 = (1.0, 0, 1.0, 0, 0), bounds = (0, np.inf))
+        time = self.fpho_data_df[Times[signal]]
+        sig = self.fpho_data_df[Channels[signal]]
+        ref = self.fpho_data_df[Channels[reference]]
+        popt, pcov = curve_fit(self.fit_exp, time, sig, p0 = (1.0, 0, 1.0, 0, 0), bounds = (0, np.inf))
 
-            AS = popt[0]  # A value
-            BS = popt[1]  # B value
-            CS = popt[2]  # C value
-            DS = popt[3]  # D value
-            ES = popt[4]  # E value
+        AS = popt[0]  # A value
+        BS = popt[1]  # B value
+        CS = popt[2]  # C value
+        DS = popt[3]  # D value
+        ES = popt[4]  # E value
 
-            popt, pcov = curve_fit(self.fit_exp, self.fpho_data_df['time_green'], self.fpho_data_df[references[i]], p0=(1.0, 0, 1.0, 0, 0), bounds=(0,np.inf))
+        popt, pcov = curve_fit(self.fit_exp, time, ref, p0=(1.0, 0, 1.0, 0, 0), bounds=(0,np.inf))
 
-            AR = popt[0]  # A value
-            BR = popt[1]  # B value
-            CR = popt[2]  # C value
-            DR = popt[3]  # D value
-            ER = popt[4]       
+        AR = popt[0]  # A value
+        BR = popt[1]  # B value
+        CR = popt[2]  # C value
+        DR = popt[3]  # D value
+        ER = popt[4]       
 
-            # Generate fit line using calculated coefficients
-            fitSig = self.fit_exp(self.fpho_data_df['time_green'], AS, BS, CS, DS, ES)
-            fitRef = self.fit_exp(self.fpho_data_df['time_green'], AR, BR, CR, DR, ER)
+        # Generate fit line using calculated coefficients
+        fitSig = self.fit_exp(self.fpho_data_df['time_green'], AS, BS, CS, DS, ES)
+        fitRef = self.fit_exp(self.fpho_data_df['time_green'], AR, BR, CR, DR, ER)
 
-            sigRsquare = np.corrcoef(self.fpho_data_df[signals[i]], fitSig)[0,1]**2
-            refRsquare = np.corrcoef(self.fpho_data_df[references[i]], fitRef)[0,1]**2
-            print('sig r^2 =', sigRsquare ,'ref r^2 =', refRsquare )
+        sigRsquare = np.corrcoef(sig, fitSig)[0,1]**2
+        refRsquare = np.corrcoef(ref, fitRef)[0,1]**2
+        print('sig r^2 =', sigRsquare ,'ref r^2 =', refRsquare )
 
-            if sigRsquare < .01:
-                print('sig r^2 =', sigRsquare)
-                print('No exponential decay was detected in ', signals[i])
-                print(signals[i] + ' expfit is now the median of ', signals[i])
-                AS = 0
-                BS = 0
-                CS = 0
-                DS = 0
-                ES = np.median(self.fpho_data_df[signals[i]])
-                fitSig = self.fit_exp(self.fpho_data_df['time_green'], AS, BS, CS, DS, ES)
-
-
-            if refRsquare < .001:
-                print('ref r^2 =', refRsquare)
-                print('No exponential decay was detected in ', references[i])
-                print(references[i] + ' expfit is now the median  ', references[i])
-                AR = 0
-                BR = 0
-                CR = 0
-                DR = 0
-                ER = np.median(self.fpho_data_df[references[i]])
-                fitRef = self.fit_exp(self.fpho_data_df['time_green'], AR, BR, CR, DR, ER)
+        if sigRsquare < .01:
+            print('sig r^2 =', sigRsquare)
+            print('No exponential decay was detected in ', signal)
+            print(signal + ' expfit is now the median of ', signal)
+            AS = 0
+            BS = 0
+            CS = 0
+            DS = 0
+            ES = np.median(sig)
+            fitSig = self.fit_exp(time, AS, BS, CS, DS, ES)
 
 
-            normedSig = [(k/j) for k,j in zip(self.fpho_data_df[signals[i]], fitSig)]
-            normedRef = [(k/j) for k,j in zip(self.fpho_data_df[references[i]], fitRef)]      
+        if refRsquare < .001:
+            print('ref r^2 =', refRsquare)
+            print('No exponential decay was detected in ', reference)
+            print(reference + ' expfit is now the median  ', reference)
+            AR = 0
+            BR = 0
+            CR = 0
+            DR = 0
+            ER = np.median(ref)
+            fitRef = self.fit_exp(time, AR, BR, CR, DR, ER)
 
-            popt, pcov = curve_fit(self.lin_fit, normedSig, normedRef, bounds = ([0, -5],[np.inf, 5]))
 
-            AL = popt[0]
-            BL = popt[1]
+        normedSig = [(k/j) for k,j in zip(sig, fitSig)]
+        normedRef = [(k/j) for k,j in zip(ref, fitRef)]      
 
-            AdjustedRef=[AL* j + BL for j in normedRef]
-            normedToReference=[(k/j) for k,j in zip(normedSig, AdjustedRef)]
+        popt, pcov = curve_fit(self.lin_fit, normedSig, normedRef, bounds = ([0, -5],[np.inf, 5]))
 
-            # below saves all the variables we generated to the df #
-            #  data frame inside the obj ex. self 
-            # and assign all the long stuff to that
-            # assign the AS, BS,.. etc and AR, BR, etc to lists called self.sig_fit_coefficients, self.ref_fit_coefficients and self.sig_to_ref_coefficients
-            self.fpho_data_df.loc[:,signals[i] + ' expfit'] = fitSig
-            # self.fpho_data_df.loc[:,signals[i] + ' expfit parameters']=['na']
-            
-            
-            #self.fpho_data_df.at[0:4, signals[i] + ' expfit parameters']=['A= ' + str(AS), 'B= ' + str(BS), 'C= ' + str(CS), 'D= ' + str(DS), 'E= ' + str(ES)]
-            self.sig_fit_coefficients = ['A= ' + str(AS), 'B= ' + str(BS), 'C= ' + str(CS), 'D= ' + str(DS), 'E= ' + str(ES)]
-            
-            self.fpho_data_df.loc[:,signals[i] + ' normed to exp']=normedSig
-            self.fpho_data_df.loc[:,references[i] + ' expfit']=fitRef
+        AL = popt[0]
+        BL = popt[1]
 
-            self.ref_fit_coefficients = ['A= ' + str(AR), 'B= ' + str(BR), 'C= ' + str(CR), 'D= ' + str(DR), 'E= ' + str(ER)]
-            
-            self.fpho_data_df.loc[:,references[i] + ' normed to exp']=normedRef
-            self.fpho_data_df.loc[:,references[i] + ' fitted to ' + signals[i]]=AdjustedRef
+        AdjustedRef=[AL* j + BL for j in normedRef]
+        normedToReference=[(k/j) for k,j in zip(normedSig, AdjustedRef)]
 
-            self.sig_to_ref_coefficients = ['A= ' + str(AL), 'B= ' + str(BL)]
-            self.fpho_data_df.loc[:,signals[i] + ' final normalized'] = normedToReference
+        # below saves all the variables we generated to the df #
+        #  data frame inside the obj ex. self 
+        # and assign all the long stuff to that
+        # assign the AS, BS,.. etc and AR, BR, etc to lists called self.sig_fit_coefficients, self.ref_fit_coefficients and self.sig_to_ref_coefficients
+        self.fpho_data_df.loc[:, signal + ' expfit'] = fitSig
+        # self.fpho_data_df.loc[:,signals[i] + ' expfit parameters']=['na']
 
-            # fig = make_subplots(rows = 3, cols = 2, x_title = 'Time(s)', subplot_titles=("Biexponential Fitted to Signal", "Signal Normalized to Biexponential", "Biexponential Fitted to Ref", "Reference Normalized to Biexponential", "Reference Linearly Fitted to Signal", "Final Normalized Signal"), shared_xaxes=True, vertical_spacing=0.1)
-            fig.add_trace(
-                go.Scatter(
-                x = self.fpho_data_df['time_green'],
-                y = self.fpho_data_df[signals[i]],
-                mode = "lines",
-                line = go.scatter.Line(color="Green"),
-                name ='Signal:' + signals[i],
-                text = 'Signal',
-                showlegend = False), row = 1, col = 1
-            )
-            fig.add_trace(
-                go.Scatter(
-                x = self.fpho_data_df['time_green'],
-                y = self.fpho_data_df[signals[i] + ' expfit'],
-                mode = "lines",
-                line = go.scatter.Line(color="Purple"),
-                text = 'Biexponential fitted to Signal',
-                showlegend = False), row = 1, col = 1
-            )
-            fig.add_trace(
-                go.Scatter(
-                x = self.fpho_data_df['time_green'],
-                y = self.fpho_data_df[signals[i] + ' normed to exp'],
-                mode = "lines",
-                line = go.scatter.Line(color="Green"),
-                text = 'Signal Normalized to Biexponential',
-                showlegend = False), row = 1, col = 2
-            )
-            fig.add_trace(
-                go.Scatter(
-                x = self.fpho_data_df['time_green'],
-                y = self.fpho_data_df[references[i]],
-                mode = "lines",
-                line = go.scatter.Line(color="Cyan"),
-                name = 'Reference:' + references[i],
-                text = 'Reference',
-                showlegend = False), row = 2, col = 1
-            )
-            fig.add_trace(
-                go.Scatter(
-                x = self.fpho_data_df['time_green'],
-                y = self.fpho_data_df[references[i] + ' expfit'],
-                mode = "lines",
-                line = go.scatter.Line(color="Purple"),
-                text = 'Biexponential fit to Reference',
-                showlegend = False), row = 2, col = 1
-            )
-            fig.add_trace(
-                go.Scatter(
-                x = self.fpho_data_df['time_green'],
-                y = self.fpho_data_df[references[i] + ' normed to exp'],
-                mode = "lines",
-                line = go.scatter.Line(color="Cyan"),
-                text = 'Reference Normalized to Biexponential',
-                showlegend = False), row = 2, col = 2
-            )
-            fig.add_trace(
-                go.Scatter(
-                x = self.fpho_data_df['time_green'],
-                y = self.fpho_data_df[signals[i] + ' normed to exp'],
-                mode = "lines",
-                line = go.scatter.Line(color="Green"),
-                text = 'Signal Normalized to Biexponential',
-                showlegend = False), row = 3, col = 1
-            )
 
-            fig.add_trace(
-                go.Scatter(
-                x = self.fpho_data_df['time_green'],
-                y = self.fpho_data_df[references[i] + ' fitted to ' + signals[i]],
-                mode = "lines",
-                line = go.scatter.Line(color="Cyan"),
-                text = 'Reference linearly scaled to signal',
-                showlegend = False), row = 3, col = 1  
-            )
+        #self.fpho_data_df.at[0:4, signals[i] + ' expfit parameters']=['A= ' + str(AS), 'B= ' + str(BS), 'C= ' + str(CS), 'D= ' + str(DS), 'E= ' + str(ES)]
+        self.sig_fit_coefficients = ['A= ' + str(AS), 'B= ' + str(BS), 'C= ' + str(CS), 'D= ' + str(DS), 'E= ' + str(ES)]
 
-            fig.add_trace(
-                go.Scatter(
-                x = self.fpho_data_df['time_green'],
-                y = self.fpho_data_df[signals[i] + ' final normalized'],
-                mode="lines",
-                line = go.scatter.Line(color = "Pink"), 
-                text = 'Final Normalized Signal',
-                showlegend = False), row = 3, col = 2
+        self.fpho_data_df.loc[:, signal + ' normed to exp']=normedSig
+        self.fpho_data_df.loc[:, reference + ' expfit']=fitRef
 
-            )
-            # fig.update_layout(
-            #     title = "Normalizing " + signals[i] + ' for ' + self.file
-            # )
-            # fig.show()
-            # return fig
+        self.ref_fit_coefficients = ['A= ' + str(AR), 'B= ' + str(BR), 'C= ' + str(CR), 'D= ' + str(DR), 'E= ' + str(ER)]
+
+        self.fpho_data_df.loc[:, reference + ' normed to exp']=normedRef
+        self.fpho_data_df.loc[:,reference + ' fitted to ' + signal]=AdjustedRef
+
+        self.sig_to_ref_coefficients = ['A= ' + str(AL), 'B= ' + str(BL)]
+        self.fpho_data_df.loc[:,signal + ' final normalized'] = normedToReference
+
+        # fig = make_subplots(rows = 3, cols = 2, x_title = 'Time(s)', subplot_titles=("Biexponential Fitted to Signal", "Signal Normalized to Biexponential", "Biexponential Fitted to Ref", "Reference Normalized to Biexponential", "Reference Linearly Fitted to Signal", "Final Normalized Signal"), shared_xaxes=True, vertical_spacing=0.1)
+        fig.add_trace(
+            go.Scatter(
+            x = time,
+            y = sig,
+            mode = "lines",
+            line = go.scatter.Line(color="Green"),
+            name ='Signal:' + signal,
+            text = 'Signal',
+            showlegend = False), row = 1, col = 1
+        )
+        fig.add_trace(
+            go.Scatter(
+            x = time,
+            y = self.fpho_data_df[signal + ' expfit'],
+            mode = "lines",
+            line = go.scatter.Line(color="Purple"),
+            text = 'Biexponential fitted to Signal',
+            showlegend = False), row = 1, col = 1
+        )
+        fig.add_trace(
+            go.Scatter(
+            x = time,
+            y = self.fpho_data_df[signal + ' normed to exp'],
+            mode = "lines",
+            line = go.scatter.Line(color="Green"),
+            text = 'Signal Normalized to Biexponential',
+            showlegend = False), row = 1, col = 2
+        )
+        fig.add_trace(
+            go.Scatter(
+            x = time,
+            y = ref,
+            mode = "lines",
+            line = go.scatter.Line(color="Cyan"),
+            name = 'Reference:' + reference,
+            text = 'Reference',
+            showlegend = False), row = 2, col = 1
+        )
+        fig.add_trace(
+            go.Scatter(
+            x = time,
+            y = self.fpho_data_df[reference + ' expfit'],
+            mode = "lines",
+            line = go.scatter.Line(color="Purple"),
+            text = 'Biexponential fit to Reference',
+            showlegend = False), row = 2, col = 1
+        )
+        fig.add_trace(
+            go.Scatter(
+            x = time,
+            y = self.fpho_data_df[reference + ' normed to exp'],
+            mode = "lines",
+            line = go.scatter.Line(color="Cyan"),
+            text = 'Reference Normalized to Biexponential',
+            showlegend = False), row = 2, col = 2
+        )
+        fig.add_trace(
+            go.Scatter(
+            x = time,
+            y = self.fpho_data_df[signal + ' normed to exp'],
+            mode = "lines",
+            line = go.scatter.Line(color="Green"),
+            text = 'Signal Normalized to Biexponential',
+            showlegend = False), row = 3, col = 1
+        )
+
+        fig.add_trace(
+            go.Scatter(
+            x = time,
+            y = self.fpho_data_df[reference + ' fitted to ' + signal],
+            mode = "lines",
+            line = go.scatter.Line(color="Cyan"),
+            text = 'Reference linearly scaled to signal',
+            showlegend = False), row = 3, col = 1  
+        )
+
+        fig.add_trace(
+            go.Scatter(
+            x = time,
+            y = self.fpho_data_df[signal + ' final normalized'],
+            mode="lines",
+            line = go.scatter.Line(color = "Pink"), 
+            text = 'Final Normalized Signal',
+            showlegend = False), row = 3, col = 2
+
+        )
+        # fig.update_layout(
+        #     title = "Normalizing " + signals[i] + ' for ' + self.file
+        # )
+        # fig.show()
+        # return fig
             
         return fig
     
@@ -492,55 +493,54 @@ class fiberObj:
         return fig
     
     
-    def plot_zscore(self, key, channels, behs):   
-    """Takes a dataframe and creates plot of z-scores for
+    def plot_zscore(self, key, channels, behs):
+        """Takes a dataframe and creates plot of z-scores for
         each time a select behavior occurs with the avg
-        z-score and SEM
-    """
-    for channel in channels:
-        for beh in behs:
-            BehTimes=list(self.fpho_data_df[(self.fpho_data_df[beh]==True)]['time_green'])
-            fig = make_subplots(rows=1, cols=2, subplot_titles=('Full trace with events', 'average'))
-            fig.add_trace(
-                go.Scatter(
-                x=self.fpho_data_df['time_green'],
-                y=self.fpho_data_df[channel],
-                mode="lines",
-                line=go.scatter.Line(color="Green"),
-                name =channel,
-                showlegend=True), row=1, col=1
-            )
-            sum=[]
-            zscoresum=[]
-            for time in BehTimes:
-                tempy=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),channel].values.tolist()
-                if len(sum)>1:
-                    sum = [sum[i] + tempy[i] for i in range(len(tempy))]
-                else:
-                    sum=tempy
-                x=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),'time_green']
-                fig.add_vline(x=time, line_dash="dot", row=1, col=1)
+    z-score and SEM"""
+        for channel in channels:
+            for beh in behs:
+                BehTimes=list(self.fpho_data_df[(self.fpho_data_df[beh]==True)]['time_green'])
+                fig = make_subplots(rows=1, cols=2, subplot_titles=('Full trace with events', 'average'))
+                fig.add_trace(
+                    go.Scatter(
+                    x=self.fpho_data_df['time_green'],
+                    y=self.fpho_data_df[channel],
+                    mode="lines",
+                    line=go.scatter.Line(color="Green"),
+                    name =channel,
+                    showlegend=True), row=1, col=1
+                )
+                sum=[]
+                zscoresum=[]
+                for time in BehTimes:
+                    tempy=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),channel].values.tolist()
+                    if len(sum)>1:
+                        sum = [sum[i] + tempy[i] for i in range(len(tempy))]
+                    else:
+                        sum=tempy
+                    x=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),'time_green']
+                    fig.add_vline(x=time, line_dash="dot", row=1, col=1)
+                    fig.add_trace(
+                        go.Scatter( 
+                        x=x-time,
+                        y=ss.zscore(self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),channel]),
+                        mode="lines",
+                        line=dict(color="Black", width=0.5, dash = 'dot'),
+                        name =channel,
+                        showlegend=False), row=1, col=2
+                    )
+                fig.add_vline(x=0, line_dash="dot", row=1, col=2)
                 fig.add_trace(
                     go.Scatter( 
                     x=x-time,
-                    y=ss.zscore(self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),channel]),
+                    y=ss.zscore([i/len(BehTimes) for i in sum]),
                     mode="lines",
-                    line=dict(color="Black", width=0.5, dash = 'dot'),
+                    line=dict(color="Red", width=3),
                     name =channel,
                     showlegend=False), row=1, col=2
-                )
-            fig.add_vline(x=0, line_dash="dot", row=1, col=2)
-            fig.add_trace(
-                go.Scatter( 
-                x=x-time,
-                y=ss.zscore([i/len(BehTimes) for i in sum]),
-                mode="lines",
-                line=dict(color="Red", width=3),
-                name =channel,
-                showlegend=False), row=1, col=2
-                )
-            fig.update_layout(
-            title= beh + ' overlaid on ' + channel + ' for animal ' +str(self.fpho_data_df['animalID'][0]) + ' on ' + str(self.fpho_data_df['date'][0]),
-            xaxis_title='Time')
-            fig.show()
-    return
+                    )
+                fig.update_layout(
+                title= beh + ' overlaid on ' + channel + ' for animal ' +str(self.fpho_data_df['animalID'][0]) + ' on ' + str(self.fpho_data_df['date'][0]),
+                xaxis_title='Time')
+                fig.show()
+        return
