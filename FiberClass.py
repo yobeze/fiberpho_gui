@@ -18,6 +18,7 @@ import panel as pn
 from statistics import mean
 import matplotlib.pyplot as plt
 import scipy.stats as ss
+import re
 
 pn.extension()
 
@@ -33,6 +34,7 @@ class fiberObj:
         self.animal_num = animal
         self.exp_date = exp_date
         self.exp_start_time = exp_start_time
+        self.behaviors=set()
         
         #modify to accept dictionary w values
         
@@ -415,20 +417,22 @@ class fiberObj:
             sys.exit(2)
 
         UniqueBehaviors=BORISData['Behavior'].unique()
-
         for beh in UniqueBehaviors:
+            self.behaviors.add(beh)
             IdxOfBeh = [i for i in range(len(BORISData['Behavior'])) if BORISData.loc[i, 'Behavior'] == beh]                    
             j=0
-            self.fpho_data_df[beh]=False
+            self.fpho_data_df[beh]=' '
             while j < len(IdxOfBeh):
                 if BORISData.loc[(IdxOfBeh[j]), 'Status']=='POINT': 
                     pointIdx=self.fpho_data_df['time_green'].searchsorted(BORISData.loc[IdxOfBeh[j],'Time'])
-                    self.fpho_data_df.loc[pointIdx, beh]=True
+                    self.fpho_data_df.loc[pointIdx, beh]='S'
                     j=j+1
                 elif BORISData.loc[(IdxOfBeh[j]), 'Status']=='START' and BORISData.loc[(IdxOfBeh[j+1]), 'Status']=='STOP':
                     startIdx=self.fpho_data_df['time_green'].searchsorted(BORISData.loc[IdxOfBeh[j],'Time'])
                     endIdx=self.fpho_data_df['time_green'].searchsorted(BORISData.loc[IdxOfBeh[j+1],'Time'])
-                    self.fpho_data_df.loc[startIdx:endIdx, beh]=True
+                    self.fpho_data_df.loc[startIdx, beh]='S'
+                    self.fpho_data_df.loc[startIdx+1:endIdx-1, beh]='O'
+                    self.fpho_data_df.loc[endIdx, beh]='E'
                     j=j+2
                 else: 
                     print("\nStart and stops for state behavior:" + beh + " are not paired correctly.\n")
@@ -438,7 +442,9 @@ class fiberObj:
     
     
         
-    def plot_behavior(self, key, channels):
+    def plot_behavior(self, channels_inputed):
+        channel_dict={'Normalized Green': 'Green final normalized', 'Normalized Red': 'red final normalized', 'Raw Green': 'green_green', 'Raw Red' : 'red_red', 'Raw Isosbestic': 'green_iso'}
+        channels=[channel_dict[i] for i in channels_inputed]
         fig = make_subplots(rows=len(channels), cols=1, subplot_titles=[channel for channel in channels], shared_xaxes=True)
         for i, channel in enumerate(channels):
             fig.add_trace(
@@ -450,40 +456,59 @@ class fiberObj:
                 name =channel,
                 showlegend=True), row=i+1, col=1
                 )
-            behaviors = self.fpho_data_df.select_dtypes(include=['bool']).columns
+            
             colors=['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52']
-            for j, beh in enumerate(behaviors):
-                flag = False
-                for k in range(len(self.fpho_data_df[channel])):
-                    if self.fpho_data_df.at[k, beh] == True:
-                        if flag == False:
-                            start = self.fpho_data_df.at[k, 'time_green'] 
-                            flag = True
-                    else:
-                        if flag == True:
-                            end = self.fpho_data_df.at[k, 'time_green'] 
-                            fig.add_vrect(
-                                x0=start, x1=end, opacity=0.75,
-                                line_width=1, 
+            for j, beh in enumerate(self.behaviors):
+                temp_beh_string = ''.join([key for key in self.fpho_data_df[beh]])
+                pattern=re.compile(r'S[O]+E')
+                bouts=pattern.finditer(temp_beh_string)
+                for bout in bouts:
+                    start_time=self.fpho_data_df.at[bout.start(), 'time_green']
+                    end_time=self.fpho_data_df.at[bout.end(), 'time_green']
+                    fig.add_vrect( x0=start_time, x1=end_time, 
+                                opacity=0.75,
                                 layer="below",
+                                line_width=1, 
                                 fillcolor=colors[j%10],
                                 row=i+1, col=1,
                                 name=beh
                                 )
-                            flag = False
-                if flag == True:
-                    end = self.fpho_data_df.at[k, 'time_green'] 
-                    fig.add_vrect( x0=start, x1=end, 
-                            opacity=0.75,
-                            layer="below",
-                            line_width=1, 
-                            fillcolor=colors[j%10],
-                            row=i+1, col=1,
-                            name=beh
-                            )
+                S=re.compile(r'S')
+                starts=S.finditer(temp_beh_string)
+                for start in starts:
+                    start_time=self.fpho_data_df.at[start.start(), 'time_green']
+                    fig.add_vline( x=start_time, 
+                                layer="below",
+                                line_width=3, 
+                                line_color=colors[j%10],
+                                row=i+1, col=1,
+                                name=beh
+                                )
+                
+                # flag = False
+                # for k in range(len(self.fpho_data_df[channel])):
+                #     if self.fpho_data_df.at[k, beh] == True:
+                #         if flag == False:
+                #             start = self.fpho_data_df.at[k, 'time_green'] 
+                #             flag = True
+                #     else:
+                #         if flag == True:
+                #             end = self.fpho_data_df.at[k, 'time_green'] 
+                #             fig.add_vrect(
+                #                 x0=start, x1=end, opacity=0.75,
+                #                 line_width=1, 
+                #                 layer="below",
+                #                 fillcolor=colors[j%10],
+                #                 row=i+1, col=1,
+                #                 name=beh
+                #                 )
+                #             flag = False
+                # if flag == True:
+                #     end = self.fpho_data_df.at[k, 'time_green'] 
+                    
                 fig.add_annotation(xref="x domain", yref="y domain",
                     x=1, 
-                    y=(j+1)/len(behaviors),
+                    y=(j+1)/len(self.behaviors),
                     text=beh,
                     bgcolor = colors[j%10],
                     showarrow=False,
@@ -491,56 +516,55 @@ class fiberObj:
                     )
         # fig.show()
         return fig
+        
     
-    
-    def plot_zscore(self, key, channels, behs):
+    def plot_zscore(self, channel_inputed, beh):
         """Takes a dataframe and creates plot of z-scores for
         each time a select behavior occurs with the avg
     z-score and SEM"""
-        for channel in channels:
-            for beh in behs:
-                BehTimes=list(self.fpho_data_df[(self.fpho_data_df[beh]==True)]['time_green'])
-                fig = make_subplots(rows=1, cols=2, subplot_titles=('Full trace with events', 'average'))
-                fig.add_trace(
-                    go.Scatter(
-                    x=self.fpho_data_df['time_green'],
-                    y=self.fpho_data_df[channel],
-                    mode="lines",
-                    line=go.scatter.Line(color="Green"),
-                    name =channel,
-                    showlegend=True), row=1, col=1
-                )
-                sum=[]
-                zscoresum=[]
-                for time in BehTimes:
-                    tempy=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),channel].values.tolist()
-                    if len(sum)>1:
-                        sum = [sum[i] + tempy[i] for i in range(len(tempy))]
-                    else:
-                        sum=tempy
-                    x=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),'time_green']
-                    fig.add_vline(x=time, line_dash="dot", row=1, col=1)
-                    fig.add_trace(
-                        go.Scatter( 
-                        x=x-time,
-                        y=ss.zscore(self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),channel]),
-                        mode="lines",
-                        line=dict(color="Black", width=0.5, dash = 'dot'),
-                        name =channel,
-                        showlegend=False), row=1, col=2
-                    )
-                fig.add_vline(x=0, line_dash="dot", row=1, col=2)
-                fig.add_trace(
-                    go.Scatter( 
-                    x=x-time,
-                    y=ss.zscore([i/len(BehTimes) for i in sum]),
-                    mode="lines",
-                    line=dict(color="Red", width=3),
-                    name =channel,
-                    showlegend=False), row=1, col=2
-                    )
-                fig.update_layout(
-                title= beh + ' overlaid on ' + channel + ' for animal ' +str(self.fpho_data_df['animalID'][0]) + ' on ' + str(self.fpho_data_df['date'][0]),
-                xaxis_title='Time')
-                fig.show()
-        return
+        channel_dict={'Normalized Green': 'Green final normalized', 'Normalized Red': 'red final normalized', 'Raw Green': 'green_green', 'Raw Red' : 'red_red', 'Raw Isosbestic': 'green_iso'}
+        channel=channel_dict[channel_inputed] 
+        BehTimes=list(self.fpho_data_df[(self.fpho_data_df[beh]=='S')]['time_green'])
+        fig = make_subplots(rows=1, cols=2, subplot_titles=('Full trace with events', 'average'))
+        fig.add_trace(
+            go.Scatter(
+            x=self.fpho_data_df['time_green'],
+            y=self.fpho_data_df[channel],
+            mode="lines",
+            line=go.scatter.Line(color="Green"),
+            name =channel,
+            showlegend=True), row=1, col=1
+        )
+        sum=[]
+        zscoresum=[]
+        for time in BehTimes:
+            tempy=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),channel].values.tolist()
+            if len(sum)>1:
+                sum = [sum[i] + tempy[i] for i in range(len(tempy))]
+            else:
+                sum=tempy
+            x=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),'time_green']
+            fig.add_vline(x=time, line_dash="dot", row=1, col=1)
+            fig.add_trace(
+                go.Scatter( 
+                x=x-time,
+                y=ss.zscore(self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),channel]),
+                mode="lines",
+                line=dict(color="Black", width=0.5, dash = 'dot'),
+                name =channel,
+                showlegend=False), row=1, col=2
+            )
+        fig.add_vline(x=0, line_dash="dot", row=1, col=2)
+        fig.add_trace(
+            go.Scatter( 
+            x=x-time,
+            y=ss.zscore([i/len(BehTimes) for i in sum]),
+            mode="lines",
+            line=dict(color="Red", width=3),
+            name =channel,
+            showlegend=False), row=1, col=2
+            )
+        fig.update_layout(
+        #title= beh + ' overlaid on ' + channel + ' for animal ' +str(self.fpho_data_df['animalID'][0]) + ' on ' + str(self.fpho_data_df['date'][0]),
+        xaxis_title='Time')
+        return fig
