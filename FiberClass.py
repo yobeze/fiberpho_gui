@@ -580,7 +580,7 @@ class fiberObj:
     
     
     #return the pearsons correlation coefficient and r value between 2 full channels and plots the signals overlaid and thier scatter plot
-    def within_trial_pearsons(self, key, channels):
+    def within_trial_pearsons(self, channels):
         results={}
         for channel in channels:
             our_channels = [col for col in self.fpho_data_df.columns if channel + ' final normalized' in col]
