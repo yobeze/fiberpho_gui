@@ -13,6 +13,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from scipy.optimize import curve_fit
 from plotly.subplots import make_subplots
+from scipy.ndimage.filters import uniform_filter1d
+from scipy.signal import butter, filtfilt
 from pathlib import Path
 import panel as pn
 from statistics import mean
@@ -571,3 +573,159 @@ class fiberObj:
         #title= beh + ' overlaid on ' + channel + ' for animal ' +str(self.fpho_data_df['animalID'][0]) + ' on ' + str(self.fpho_data_df['date'][0]),
         xaxis_title='Time')
         return fig
+    
+    
+    
+    
+    
+    
+    #return the pearsons correlation coefficient and r value between 2 full channels and plots the signals overlaid and thier scatter plot
+    def within_trial_pearsons(self, key, channels):
+        results={}
+        for channel in channels:
+            our_channels = [col for col in self.fpho_data_df.columns if channel + ' final normalized' in col]
+            if len(our_channels) < 1:
+                print('data must be normalized before running a correlation')
+                sys.exit()
+            sig1 = self.fpho_data_df[our_channels[0]]
+            sig2 = self.fpho_data_df[our_channels[1]]
+
+            time = self.fpho_data_df['time_green']
+            for i in range(50, 100, 10):
+                #sig1smooth = ss.zscore(uniform_filter1d(sig1, size=i))
+                #sig2smooth = ss.zscore(uniform_filter1d(sig2, size=i))
+                fig = make_subplots(rows=1, cols=2)
+                #creates a scatter plot
+                fig.add_trace(
+                    go.Scatter(
+                    x=sig1smooth,
+                    y=sig2smooth,
+                    mode="markers",
+                    name ='correlation',
+                    showlegend=False), row=1, col=2
+                )
+                #plots sig1
+                fig.add_trace(
+                    go.Scatter(
+                    x=time,
+                    y=sig1,
+                    mode="lines",
+                    name='sig1',
+                    showlegend=False), row=1, col=1
+                )
+                #plots sig2
+                fig.add_trace(
+                    go.Scatter(
+                    x=time,
+                    y=sig2,
+                    mode="lines",
+                    name = "sig2",
+                    showlegend=False), row=1, col=1
+                )
+
+            #calculates the pearsons R  
+            [r, p] = ss.pearsonr(sig1, sig2)
+            results[channel]=[r, p]
+        #returns the pearsons R
+        print('Pearsons')
+        return results
+    
+    
+    
+    #return the pearsons 
+    def behavior_specific_pearsons(self, file, channels, behs):
+        results = {}
+        for channel in channels:
+            our_channels = [chan + ' final normalized' for chan in channel ]
+            channel_names=channel[0]+ ' vs ' +channel[1]
+            if len(our_channels) < 1:
+                print('data must be normalized before running a correlation')
+                sys.exit()
+            results[channel_names] = {} 
+            sig1 = []
+            sig2 = []
+            for beh in behs:
+                behaviorname=''
+                flag=False
+                for name in beh:
+                    behaviorname= behaviorname + ' ,' + name
+                    # if name in df.columns:
+                    if name in self.fpho_data_df.columns
+                        flag = True
+                if flag:
+                    # behaviorSlice=df.loc[:,beh]
+                    behaviorSlice = self.fpho_data_df.loc[:,beh]
+                    TrueTimes = behaviorSlice.any(axis=1);
+                    # corDf = pd.concat([df['fTimeGreen'], df[our_channels[0]], df[our_channels[1]], TrueTimes], axis=1)
+                    corDf = pd.concat([self.fpho_data_df['time_green'], self.fpho_data_df[our_channels[0]], df[our_channels[1]], TrueTimes],                       axis=1)
+                    corDf.columns = ['time_green', our_channels[0], our_channels[1], 'TrueTimes']
+
+                    sig1 = corDf[corDf.TrueTimes == True][our_channels[0]].tolist()
+                    sig2 = corDf[corDf.TrueTimes == True][our_channels[1]].tolist()
+
+
+                    #difsig1=[sig1.iloc[i+1]-sig1.iloc[i] for i in range(len(sig1)-1)]
+                    #difsig2=[sig2.iloc[i+1]-sig2.iloc[i] for i in range(len(sig2)-1)]
+                    #sig1 = ss.zscore(uniform_filter1d(sig1, size=50))
+                    #sig2 = ss.zscore(uniform_filter1d(sig2, size=50))
+
+                    time = corDf[corDf.TrueTimes == True]['time_green']
+                    fig = make_subplots(rows = 1, cols = 2)
+                    fig.add_trace(
+                        go.Scatter(
+                        x = sig1,
+                        y = sig2,
+                        mode = "markers",
+                        name = behaviorname,
+                        showlegend = False), row = 1, col = 2
+                    )
+                    fig.add_trace(
+                        go.Scatter(
+                        x = time,
+                        y = sig1,
+                        mode = "lines",
+                        line = go.scatter.Line(color = 'rgb(255,100,150)'),
+                        name = channel[0],
+                        showlegend = False), row = 1, col = 1
+                    )
+                    fig.add_trace(
+                        go.Scatter(
+                        x = time,
+                        y = sig2,
+                        mode = "lines",
+                        line = go.scatter.Line(color = 'rgba(100,0,200, .6)'),
+                        name = channel[1],
+                        showlegend = False), row = 1, col = 1
+                    )
+                    fig.update_yaxes(
+                        #title_text = "Interbrain Correlation (PCC)",
+                        showgrid = True,
+                        #showline=True, linewidth=2, linecolor='black',
+                    )
+                    fig.update_layout(
+                            title = channel_names + ' while' + behaviorname + ' for ' + file
+                            )
+                    fig.update_xaxes(title_text = channel[0]+ ' zscore')
+                    fig.update_yaxes(title_text = channel[1] + ' zscore')
+
+                    fig.update_xaxes(title_text = 'Time (s)', col = 1, row = 1)
+                    fig.update_yaxes(title_text = 'Zscore', col = 1, row = 1)
+
+                    fig.show()
+                    #fig.write_image('together_seperate1.pdf')
+                    [r, p] = ss.pearsonr(sig1, sig2)
+                    #print(sig1.iloc[0:len(sig1)*(1/3)])
+                    #print(sig1.type())
+                    beg = ss.pearsonr(sig1[0:int(len(sig1)*(1/3))], sig2[0:int(len(sig1)*(1/3))])
+                    mid = ss.pearsonr(sig1[int(len(sig1)*(1/3)):int(len(sig1)*(2/3))], sig2[int(len(sig1)*(1/3)):int(len(sig1)*(2/3))])
+                    end = ss.pearsonr(sig1[int(len(sig1)*(2/3)):], sig2[int(len(sig1)*(2/3)):])
+                else:
+                    [r, p] = ['na', 'na']
+                    print(behaviorname + ' not found in this trial')
+                results[channel_names][behaviorname]={'full':r, 'start':beg, 'middle':mid, 'end':end}  
+
+        # Change this to append to gui
+        # perhaps return file/results then append to gui
+        print(file)
+        print(results)
+        return 
