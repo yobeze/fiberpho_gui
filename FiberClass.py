@@ -448,7 +448,7 @@ class fiberObj:
     
     
         
-    def plot_behavior(self, channels):
+    def plot_behavior(self, behaviors, channels):
         # channels =[channel_dict[i] for i in channels_inputed]
         fig = make_subplots(rows=len(channels), cols = 1, subplot_titles = [channel for channel in channels], shared_xaxes = True)
         for i, channel in enumerate(channels):
@@ -463,7 +463,8 @@ class fiberObj:
                 )
             
             colors = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52']
-            for j, beh in enumerate(self.behaviors):
+            j=0
+            for j, beh in enumerate(behaviors):
                 temp_beh_string = ''.join([key for key in self.fpho_data_df[beh]])
                 pattern = re.compile(r'S[O]+E')
                 bouts = pattern.finditer(temp_beh_string)
@@ -523,7 +524,7 @@ class fiberObj:
         return fig
         
     
-    def plot_zscore(self, channel, beh):
+    def plot_zscore(self, channel, beh, time_before, time_after):
         """Takes a dataframe and creates plot of z-scores for
         each time a select behavior occurs with the avg
     z-score and SEM"""
@@ -541,17 +542,17 @@ class fiberObj:
         sum=[]
         zscoresum=[]
         for time in BehTimes:
-            tempy=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),channel].values.tolist()
+            tempy=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-time_before):self.fpho_data_df['time_green'].searchsorted(time+time_after),channel].values.tolist()
             if len(sum)>1:
                 sum = [sum[i] + tempy[i] for i in range(len(tempy))]
             else:
                 sum=tempy
-            x=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),'time_green']
+            x=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-time_before):self.fpho_data_df['time_green'].searchsorted(time+time_after),'time_green']
             fig.add_vline(x=time, line_dash="dot", row=1, col=1)
             fig.add_trace(
                 go.Scatter( 
                 x=x-time,
-                y=ss.zscore(self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-1):self.fpho_data_df['time_green'].searchsorted(time+5),channel]),
+                y=ss.zscore(self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-time_before):self.fpho_data_df['time_green'].searchsorted(time+time_after),channel]),
                 mode="lines",
                 line=dict(color="Black", width=0.5, dash = 'dot'),
                 name =channel,
