@@ -15,6 +15,7 @@ from scipy.optimize import curve_fit
 from plotly.subplots import make_subplots
 from scipy.ndimage.filters import uniform_filter1d
 from scipy.signal import butter, filtfilt
+from scipy.stats import pearsonr
 from pathlib import Path
 import panel as pn
 from statistics import mean
@@ -38,6 +39,8 @@ class fiberObj:
         self.exp_start_time = exp_start_time
         self.behaviors = set()
         self.channels = set()
+        self.full_corr_results = {}
+        self.behav_corr_results = {}
         
         #modify to accept dictionary w values
         
@@ -578,65 +581,69 @@ class fiberObj:
     
     
     
+
+    
     
     #return the pearsons correlation coefficient and r value between 2 full channels and plots the signals overlaid and thier scatter plot
-    def within_trial_pearsons(self, key, channels):
-        results={}
-        for channel in channels:
-            our_channels = [col for col in self.fpho_data_df.columns if channel + ' final normalized' in col]
-            if len(our_channels) < 1:
-                print('data must be normalized before running a correlation')
-                sys.exit()
-            sig1 = self.fpho_data_df[our_channels[0]]
-            sig2 = self.fpho_data_df[our_channels[1]]
+    def within_trial_pearsons(self, obj_2, channel):
+        results = {}
+        sig1 = self.fpho_data_df[channel]
+        sig2 = obj_2.fpho_data_df[channel]
 
-            time = self.fpho_data_df['time_green']
-            for i in range(50, 100, 10):
-                #sig1smooth = ss.zscore(uniform_filter1d(sig1, size=i))
-                #sig2smooth = ss.zscore(uniform_filter1d(sig2, size=i))
-                fig = make_subplots(rows=1, cols=2)
-                #creates a scatter plot
-                fig.add_trace(
-                    go.Scatter(
-                    x=sig1smooth,
-                    y=sig2smooth,
-                    mode="markers",
-                    name ='correlation',
-                    showlegend=False), row=1, col=2
-                )
-                #plots sig1
-                fig.add_trace(
-                    go.Scatter(
-                    x=time,
-                    y=sig1,
-                    mode="lines",
-                    name='sig1',
-                    showlegend=False), row=1, col=1
-                )
-                #plots sig2
-                fig.add_trace(
-                    go.Scatter(
-                    x=time,
-                    y=sig2,
-                    mode="lines",
-                    name = "sig2",
-                    showlegend=False), row=1, col=1
-                )
+        time = self.fpho_data_df['time_green']
+    
+        #sig1smooth = ss.zscore(uniform_filter1d(sig1, size=i))
+        #sig2smooth = ss.zscore(uniform_filter1d(sig2, size=i))
+        fig = make_subplots(rows = 1, cols = 2)
+        #creates a scatter plot
+        fig.add_trace(
+            go.Scatter(
+            x = sig1,
+            y = sig2,
+            mode = "markers",
+            name ='correlation',
+            showlegend = False), row = 1, col = 2
+        )
+        #plots sig1
+        fig.add_trace(
+            go.Scatter(
+            x = time,
+            y = sig1,
+            mode = "lines",
+            name = 'sig1',
+            showlegend = False), row = 1, col = 1
+        )
+        #plots sig2
+        fig.add_trace(
+            go.Scatter(
+            x = time,
+            y = sig2,
+            mode = "lines",
+            name = "sig2",
+            showlegend = False), row = 1, col = 1
+        )
 
-            #calculates the pearsons R  
-            [r, p] = ss.pearsonr(sig1, sig2)
-            results[channel]=[r, p]
+        #calculates the pearsons R  
+        [r, p] = ss.pearsonr(sig1, sig2)
+        results[channel]=[r, p]
         #returns the pearsons R
         print('Pearsons')
-        return results
-    
-    
+        
+        fig.update_layout(
+        title = 'Correlation between ' + self.obj_name + ' and ' + obj_2.obj_name + ' is, ' + str(r) + ' p = ' + str(p)
+        )
+        
+        self.full_corr_results[obj_2.obj_name] = (r, p)
+        obj_2.full_corr_results[self.obj_name] = (r, p)
+        return fig
+
     
     #return the pearsons 
-    def behavior_specific_pearsons(self, file, channels, behs):
+    def behavior_specific_pearsons(self, channels, behs):
         results = {}
+        # fpho_cols = self.fpho_data_df.columns
         for channel in channels:
-            our_channels = [chan + ' final normalized' for chan in channel ]
+            our_channels = [chan + ' final normalized' for chan in channel]
             channel_names=channel[0]+ ' vs ' +channel[1]
             if len(our_channels) < 1:
                 print('data must be normalized before running a correlation')
@@ -645,12 +652,12 @@ class fiberObj:
             sig1 = []
             sig2 = []
             for beh in behs:
-                behaviorname=''
+                behaviorname = ''
                 flag=False
                 for name in beh:
                     behaviorname= behaviorname + ' ,' + name
                     # if name in df.columns:
-                    if name in self.fpho_data_df.columns
+                    if name in self.fpho_data_df.columns:
                         flag = True
                 if flag:
                     # behaviorSlice=df.loc[:,beh]
