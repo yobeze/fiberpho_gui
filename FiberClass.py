@@ -1,10 +1,6 @@
 from os import error
 import sys
 import argparse
-# import fpho_config_copy
-# import fpho_setup_copys
-# import correlation_setup_copy
-# import behavior_setup_copy
 import pandas as pd
 import numpy as np
 import csv
@@ -138,9 +134,9 @@ class fiberObj:
                 y = self.fpho_data_df['Raw_Green'],
                 mode = "lines",
                 line = go.scatter.Line(color = "Green"),
-                name = 'f1Green',
-                text = 'f1Green',
-                showlegend = False), row = 1, col = 1
+                name = 'Green',
+                text = 'Green',
+                showlegend = True), row = 1, col = 1
         )
         fig.add_trace(
             go.Scatter(
@@ -148,9 +144,9 @@ class fiberObj:
                 y = self.fpho_data_df['Raw_Isosbestic'],
                 mode = "lines",
                 line = go.scatter.Line(color = "Cyan"),
-                name = 'Raw_Isosbestic',
-                text = 'Raw_Isosbestic',
-                showlegend = False), row = 1, col = 1
+                name = 'Isosbestic in green',
+                text = 'Isosbestic in green',
+                showlegend = True), row = 1, col = 1
         )
         fig.add_trace(
             go.Scatter(
@@ -158,9 +154,9 @@ class fiberObj:
                 y = self.fpho_data_df['Raw_Red'],
                 mode = "lines",
                 line = go.scatter.Line(color="Red"),
-                name = 'f1Red',
-                text = 'f1Red',
-                showlegend = False), row = 1, col = 2
+                name = 'Red',
+                text = 'Red',
+                showlegend = True), row = 1, col = 2
         )
         fig.add_trace(
             go.Scatter(
@@ -168,13 +164,13 @@ class fiberObj:
                 y = self.fpho_data_df['red_iso'],
                 mode = "lines",
                 line = go.scatter.Line(color="Violet"),
-                name = 'red_iso',
-                text = 'red_iso',
-                showlegend = False), row = 1, col = 2
+                name = 'Isosbestic in red',
+                text = 'Isosbestic in red',
+                showlegend = True), row = 1, col = 2
         )
         
         fig.update_layout(
-            title = "Raw Traces from all channels for animal number " + str(self.animal_num) + " on " + self.exp_date + " at " + self.exp_start_time
+            title = self.obj_name + ' ' + signal + ' normalized to ' + reference 
         )
         # fig.show()
         return fig
@@ -305,7 +301,7 @@ class fiberObj:
             line = go.scatter.Line(color="Green"),
             name ='Signal:' + signal,
             text = 'Signal',
-            showlegend = False), row = 1, col = 1
+            showlegend = True), row = 1, col = 1
         )
         fig.add_trace(
             go.Scatter(
@@ -314,7 +310,7 @@ class fiberObj:
             mode = "lines",
             line = go.scatter.Line(color="Purple"),
             text = 'Biexponential fitted to Signal',
-            showlegend = False), row = 1, col = 1
+            showlegend = True), row = 1, col = 1
         )
         fig.add_trace(
             go.Scatter(
@@ -323,7 +319,7 @@ class fiberObj:
             mode = "lines",
             line = go.scatter.Line(color="Green"),
             text = 'Signal Normalized to Biexponential',
-            showlegend = False), row = 1, col = 2
+            showlegend = True), row = 1, col = 2
         )
         fig.add_trace(
             go.Scatter(
@@ -333,7 +329,7 @@ class fiberObj:
             line = go.scatter.Line(color="Cyan"),
             name = 'Reference:' + reference,
             text = 'Reference',
-            showlegend = False), row = 2, col = 1
+            showlegend = True), row = 2, col = 1
         )
         fig.add_trace(
             go.Scatter(
@@ -342,7 +338,7 @@ class fiberObj:
             mode = "lines",
             line = go.scatter.Line(color="Purple"),
             text = 'Biexponential fit to Reference',
-            showlegend = False), row = 2, col = 1
+            showlegend = True), row = 2, col = 1
         )
         fig.add_trace(
             go.Scatter(
@@ -351,7 +347,7 @@ class fiberObj:
             mode = "lines",
             line = go.scatter.Line(color="Cyan"),
             text = 'Reference Normalized to Biexponential',
-            showlegend = False), row = 2, col = 2
+            showlegend = True, row = 2, col = 2
         )
         fig.add_trace(
             go.Scatter(
@@ -360,7 +356,7 @@ class fiberObj:
             mode = "lines",
             line = go.scatter.Line(color="Green"),
             text = 'Signal Normalized to Biexponential',
-            showlegend = False), row = 3, col = 1
+            showlegend = True), row = 3, col = 1
         )
 
         fig.add_trace(
@@ -370,7 +366,7 @@ class fiberObj:
             mode = "lines",
             line = go.scatter.Line(color="Cyan"),
             text = 'Reference linearly scaled to signal',
-            showlegend = False), row = 3, col = 1  
+            showlegend = True), row = 3, col = 1  
         )
 
         fig.add_trace(
@@ -380,15 +376,12 @@ class fiberObj:
             mode="lines",
             line = go.scatter.Line(color = "Pink"), 
             text = 'Final Normalized Signal',
-            showlegend = False), row = 3, col = 2
+            showlegend = True, row = 3, col = 2
 
         )
-        # fig.update_layout(
-        #     title = "Normalizing " + signals[i] + ' for ' + self.file
-        # )
-        # fig.show()
-        # return fig
-            
+        fig.update_layout(
+             title = "Normalizing " + signals + ' for ' + self.obj_name
+        )
         return fig
     
 
