@@ -32,6 +32,8 @@ class fiberObj:
         self.exp_start_time = exp_start_time
         self.behaviors = set()
         self.channels = set()
+        self.full_corr_results = {}
+        self.behav_corr_results = {}
         
         #modify to accept dictionary w values
         
@@ -347,7 +349,7 @@ class fiberObj:
             mode = "lines",
             line = go.scatter.Line(color="Cyan"),
             text = 'Reference Normalized to Biexponential',
-            showlegend = True, row = 2, col = 2
+            showlegend = True), row = 2, col = 2
         )
         fig.add_trace(
             go.Scatter(
@@ -376,7 +378,7 @@ class fiberObj:
             mode="lines",
             line = go.scatter.Line(color = "Pink"), 
             text = 'Final Normalized Signal',
-            showlegend = True, row = 3, col = 2
+            showlegend = True), row = 3, col = 2
 
         )
         fig.update_layout(
@@ -564,4 +566,125 @@ class fiberObj:
         fig.update_layout(
         #title= beh + ' overlaid on ' + channel + ' for animal ' +str(self.fpho_data_df['animalID'][0]) + ' on ' + str(self.fpho_data_df['date'][0]),
         xaxis_title='Time')
+        return fig
+        
+         #return the pearsons correlation coefficient and r value between 2 full channels and plots the signals overlaid and thier scatter plot
+    def within_trial_pearsons(self, obj2, channel):
+        results = {}
+        sig1 = self.fpho_data_df[channel]
+        sig2 = obj2.fpho_data_df[channel]
+
+        time = self.fpho_data_df['time_green']
+    
+        #sig1smooth = ss.zscore(uniform_filter1d(sig1, size=i))
+        #sig2smooth = ss.zscore(uniform_filter1d(sig2, size=i))
+        fig = make_subplots(rows = 1, cols = 2)
+        #creates a scatter plot
+        fig.add_trace(
+            go.Scatter(
+            x = sig1,
+            y = sig2,
+            mode = "markers",
+            name ='correlation',
+            showlegend = False), row = 1, col = 2
+        )
+        #plots sig1
+        fig.add_trace(
+            go.Scatter(
+            x = time,
+            y = sig1,
+            mode = "lines",
+            name = 'sig1',
+            showlegend = False), row = 1, col = 1
+        )
+        #plots sig2
+        fig.add_trace(
+            go.Scatter(
+            x = time,
+            y = sig2,
+            mode = "lines",
+            name = "sig2",
+            showlegend = False), row = 1, col = 1
+        )
+
+        #calculates the pearsons R  
+        [r, p] = ss.pearsonr(sig1, sig2)
+        results[channel]=[r, p]
+        #returns the pearsons R
+        
+        fig.update_layout(
+        title = 'Correlation between ' + self.obj_name + ' and ' + obj2.obj_name + ' is, ' + str(r) + ' p = ' + str(p)
+        )
+        
+        self.full_corr_results[obj2.obj_name] = (r, p)
+        obj2.full_corr_results[self.obj_name] = (r, p)
+        return fig
+
+    
+    #return the pearsons 
+    def behavior_specific_pearsons(self, obj2, channel, beh):
+        results = {}
+        results[channel] = {} 
+        sig1 = []
+        sig2 = []
+        # behaviorSlice=df.loc[:,beh]
+        behaviorSlice1 = self.fpho_data_df[self.fpho_data_df[beh] != ' ']
+        behaviorSlice2 = obj2.fpho_data_df[self.fpho_data_df[beh] != ' ']
+
+        time = behaviorSlice1['time_green']
+        sig1 = behaviorSlice1[channel]
+        sig2 = behaviorSlice2[channel]
+        fig = make_subplots(rows = 1, cols = 2)
+        fig.add_trace(
+            go.Scatter(
+            x = sig1,
+            y = sig2,
+            mode = "markers",
+            name = beh,
+            showlegend = False), row = 1, col = 2
+        )
+        fig.add_trace(
+            go.Scatter(
+            x = time,
+            y = sig1,
+            mode = "lines",
+            line = go.scatter.Line(color = 'rgb(255,100,150)'),
+            name = channel,
+            showlegend = False), row = 1, col = 1
+        )
+        fig.add_trace(
+            go.Scatter(
+            x = time,
+            y = sig2,
+            mode = "lines",
+            line = go.scatter.Line(color = 'rgba(100,0,200, .6)'),
+            name = channel[1],
+            showlegend = False), row = 1, col = 1
+        )
+        fig.update_yaxes(
+            #title_text = "Interbrain Correlation (PCC)",
+            showgrid = True,
+            #showline=True, linewidth=2, linecolor='black',
+        )
+        fig.update_layout(
+                title = channel + ' while' + beh + ' for ' + self.obj_name + obj2.obj_name
+                )
+        fig.update_xaxes(title_text = channel+ ' zscore')
+        fig.update_yaxes(title_text = channel + ' zscore')
+
+        fig.update_xaxes(title_text = 'Time (s)', col = 1, row = 1)
+        fig.update_yaxes(title_text = 'Zscore', col = 1, row = 1)
+
+        fig.show()
+        #fig.write_image('together_seperate1.pdf')
+        [r, p] = ss.pearsonr(sig1, sig2)
+        #print(sig1.iloc[0:len(sig1)*(1/3)])
+        #print(sig1.type())
+        beg = ss.pearsonr(sig1[0:int(len(sig1)*(1/3))], sig2[0:int(len(sig1)*(1/3))])
+        mid = ss.pearsonr(sig1[int(len(sig1)*(1/3)):int(len(sig1)*(2/3))], sig2[int(len(sig1)*(1/3)):int(len(sig1)*(2/3))])
+        end = ss.pearsonr(sig1[int(len(sig1)*(2/3)):], sig2[int(len(sig1)*(2/3)):])
+        # else:
+        #     [r, p] = ['na', 'na']
+        #     print(behaviorname + ' not found in this trial')
+        results[channel][beh]={'full':r, 'start':beg, 'middle':mid, 'end':end}  
         return fig
