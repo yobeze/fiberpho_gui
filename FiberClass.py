@@ -382,7 +382,7 @@ class fiberObj:
 
         )
         fig.update_layout(
-             title = "Normalizing " + signals + ' for ' + self.obj_name
+             title = "Normalizing " + signal + ' for ' + self.obj_name
         )
         return fig
     
