@@ -32,8 +32,8 @@ class fiberObj:
         self.exp_start_time = exp_start_time
         self.behaviors = set()
         self.channels = set()
-        self.full_corr_results = {}
-        self.behav_corr_results = {}
+        self.full_corr_results = pd.DataFrame([], index=[self.obj_name])
+        self.beh_corr_results = {}
         
         #modify to accept dictionary w values
         
@@ -570,7 +570,15 @@ class fiberObj:
         
          #return the pearsons correlation coefficient and r value between 2 full channels and plots the signals overlaid and thier scatter plot
     def within_trial_pearsons(self, obj2, channel):
-        results = {}
+        if not channel in self.full_corr_results.columns:
+            self.full_corr_results.loc[:, channel] = [(float("NaN"), float("NaN")) for i in range(len(self.full_corr_results.index))]
+        if not channel in obj2.full_corr_results.columns:
+            obj2.full_corr_results.loc[:, channel] = [(float("NaN"), float("NaN")) for i in range(len(obj2.full_corr_results.index))]
+        if not obj2.obj_name in self.full_corr_results:
+            self.full_corr_results.loc[obj2.obj_name, :] = [(float("NaN"), float("NaN")) for i in range(len(obj2.full_corr_results.columns))]
+        if not self.obj_name in obj2.full_corr_results:
+            obj2.full_corr_results.loc[self.obj_name, :] = [(float("NaN"), float("NaN")) for i in range(len(self.full_corr_results.columns))]
+        
         sig1 = self.fpho_data_df[channel]
         sig2 = obj2.fpho_data_df[channel]
 
@@ -609,24 +617,33 @@ class fiberObj:
 
         #calculates the pearsons R  
         [r, p] = ss.pearsonr(sig1, sig2)
-        results[channel]=[r, p]
-        #returns the pearsons R
+        self.full_corr_results[obj2.obj_name, channel] = (r, p)
+        obj2.full_corr_results[self.obj_name, channel] = (r, p)
         
         fig.update_layout(
         title = 'Correlation between ' + self.obj_name + ' and ' + obj2.obj_name + ' is, ' + str(r) + ' p = ' + str(p)
         )
-        
-        self.full_corr_results[obj2.obj_name] = (r, p)
-        obj2.full_corr_results[self.obj_name] = (r, p)
         return fig
 
     
     #return the pearsons 
     def behavior_specific_pearsons(self, obj2, channel, beh):
-        results = {}
-        results[channel] = {} 
-        sig1 = []
-        sig2 = []
+        if not channel in self.beh_corr_results:
+            self.beh_corr_results[channel] = pd.DataFrame([], index = [self.obj_name])
+        if not channel in obj2.beh_corr_results:
+            obj2.beh_corr_results[channel] = pd.DataFrame([], index = [obj2.obj_name])
+        
+        if not beh in self.beh_corr_results[channel].columns:
+            self.beh_corr_results[channel].loc[:, beh] = [(float("NaN"), float("NaN")) for i in range(len(self.beh_corr_results[channel].index))]
+        if not beh in obj2.beh_corr_results[channel].columns:
+            obj2.beh_corr_results[channel].loc[:, beh] = [(float("NaN"), float("NaN")) for i in range(len(obj2.beh_corr_results[channel].index))]
+        
+        if not obj2.obj_name in self.beh_corr_results[channel]:
+            self.beh_corr_results[channel].loc[obj2.obj_name, :] = [(float("NaN"), float("NaN")) for i in range(len(obj2.beh_corr_results[channel].columns))]
+        if not self.obj_name in obj2.beh_corr_results[channel]:
+            obj2.beh_corr_results[channel].loc[self.obj_name, :] = [(float("NaN"), float("NaN")) for i in range(len(self.beh_corr_results[channel].columns))]
+        
+        
         # behaviorSlice=df.loc[:,beh]
         behaviorSlice1 = self.fpho_data_df[self.fpho_data_df[beh] != ' ']
         behaviorSlice2 = obj2.fpho_data_df[self.fpho_data_df[beh] != ' ']
@@ -686,5 +703,7 @@ class fiberObj:
         # else:
         #     [r, p] = ['na', 'na']
         #     print(behaviorname + ' not found in this trial')
-        results[channel][beh]={'full':r, 'start':beg, 'middle':mid, 'end':end}  
+        self.beh_corr_results[channel].loc[obj2.obj_name, beh]=(r,p)  
+        obj2.beh_corr_results[channel].loc[self.obj_name, beh]=(r,p)
+
         return fig
