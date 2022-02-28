@@ -32,7 +32,7 @@ class fiberObj:
         self.exp_start_time = exp_start_time
         self.behaviors = set()
         self.channels = set()
-        self.full_corr_results = pd.DataFrame([], index=[self.obj_name])
+        self.full_corr_results = pd.DataFrame([], index = [self.obj_name])
         self.beh_corr_results = {}
         
         #modify to accept dictionary w values
@@ -616,7 +616,9 @@ class fiberObj:
         )
 
         #calculates the pearsons R  
+        print(sig1, sig2)
         [r, p] = ss.pearsonr(sig1, sig2)
+        print(r, p)
         self.full_corr_results[obj2.obj_name, channel] = (r, p)
         obj2.full_corr_results[self.obj_name, channel] = (r, p)
         

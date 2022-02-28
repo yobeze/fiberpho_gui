@@ -1,8 +1,6 @@
-# %autoreload 2
-
-#Import everything
 import io
 import param
+import sys
 import panel as pn
 import pandas as pd
 import csv
@@ -45,6 +43,13 @@ def run_init_fiberobj(event = None):
     animal_num = 1
     exp_date = '2020-12-19'
     exp_time = '1:20'
+
+    fpho_input_2 = 'FiberPhoSig2020-12-19T17_38_46.csv'
+    obj_name_2 = 'poot'
+    fiber_num_2 = 2
+    animal_num_2 = 2
+    exp_date_2 = '2020-12-20'
+    exp_time_2 = '1:30'
     
     if fpho_input:
         try:
@@ -56,6 +61,17 @@ def run_init_fiberobj(event = None):
         except PermissionError:
             print("Could not access file: " + fpho_input)
             sys.exit(3)
+            
+    if fpho_input_2:
+        try:
+            # string_io = io.StringIO(file_in.decode("utf8"))
+            df_2 = pd.read_csv(fpho_input_2)
+        except FileNotFoundError:
+            print("Could not find file: " + fpho_input_2)
+            sys.exit(4)
+        except PermissionError:
+            print("Could not access file: " + fpho_input_2)
+            sys.exit(5)
     
     if df.empty:
         print("Dataframe is empty")
@@ -64,6 +80,28 @@ def run_init_fiberobj(event = None):
         new_obj = fc.fiberObj(df, obj_name, fiber_num, animal_num, exp_date, exp_time)
         # fiber_dict.append(new_obj)
         fiber_objs[obj_name] = new_obj
+        # add to multi-selector
+        existing_objs = fiber_objs
+        obj_selecta.options = [*existing_objs] #Updates selector with new objects
+        # add to single select for behavior
+        norm_selecta.options = [*existing_objs]
+        behav_selecta.options = [*existing_objs]
+        plot_beh_selecta.options = [*existing_objs]
+        zscore_selecta.options = [*existing_objs]
+        pearsons_selecta1.options = [*existing_objs]
+        pearsons_selecta2.options = [*existing_objs]
+        beh_corr_selecta1.options = [*existing_objs]
+        beh_corr_selecta2.options = [*existing_objs]
+        
+        
+        
+    if df_2.empty:
+        print("Dataframe is empty")
+        sys.exit(4)
+    else:
+        new_obj_2 = fc.fiberObj(df_2, obj_name_2, fiber_num_2, animal_num_2, exp_date_2, exp_time_2)
+        # fiber_dict.append(new_obj)
+        fiber_objs[obj_name_2] = new_obj_2
         # add to multi-selector
         existing_objs = fiber_objs
         obj_selecta.options = [*existing_objs] #Updates selector with new objects
@@ -430,4 +468,5 @@ template.main.append(pearsons_card)
 template.main.append(beh_corr_card)
 # template.main.append(visuals)
 server = template.servable()
+# template.show()
 
