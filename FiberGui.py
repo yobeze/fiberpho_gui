@@ -445,7 +445,7 @@ beh_corr_behavior_selecta = pn.widgets.MultiSelect(name = 'Behavior', value = []
 
 #Buttons
 beh_corr_btn = pn.widgets.Button(name = 'Calculate Pearsons Correlation', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
-beh_corr_btn.on_click(run_trial_pearsons) #Button action
+beh_corr_btn.on_click(run_beh_specific_pearsons) #Button action
 beh_corr_options_btn = pn.widgets.Button(name = 'Update Options', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
 beh_corr_options_btn.on_click(update_selecta_options) #Button action
 

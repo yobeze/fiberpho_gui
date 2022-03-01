@@ -663,7 +663,7 @@ class fiberObj:
             showlegend = False), row = 1, col = 2
         )
         fig.add_trace(
-            go.Scattergl(
+            go.Scatter(
             x = time,
             y = sig1,
             mode = "lines",
@@ -672,7 +672,7 @@ class fiberObj:
             showlegend = False), row = 1, col = 1
         )
         fig.add_trace(
-            go.Scattergl(
+            go.Scatter(
             x = time,
             y = sig2,
             mode = "lines",
@@ -694,7 +694,7 @@ class fiberObj:
         fig.update_xaxes(title_text = 'Time (s)', col = 1, row = 1)
         fig.update_yaxes(title_text = 'Zscore', col = 1, row = 1)
 
-        fig.show()
+        # fig.show()
         #fig.write_image('together_seperate1.pdf')
         [r, p] = ss.pearsonr(sig1, sig2)
         #print(sig1.iloc[0:len(sig1)*(1/3)])
@@ -705,7 +705,8 @@ class fiberObj:
         # else:
         #     [r, p] = ['na', 'na']
         #     print(behaviorname + ' not found in this trial')
+        print(r, p)
         self.beh_corr_results[channel].loc[obj2.obj_name, beh]=(r,p)  
         obj2.beh_corr_results[channel].loc[self.obj_name, beh]=(r,p)
-
+        
         return fig
