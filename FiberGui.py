@@ -20,7 +20,7 @@ import FiberClass as fc
 
 # import plotly
 
-pn.extension("plotly", sizing_mode = "stretch_width", loading_color = '#00aa41')
+pn.extension('plotly', sizing_mode = "stretch_width", loading_color = '#00aa41')
 
 
 
