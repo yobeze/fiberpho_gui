@@ -39,18 +39,18 @@ class fiberObj:
         
         start_is_not_green = True
         while(start_is_not_green):
-            if file["Flags"][self.start_idx] == 18:
+            if file["LedState"][self.start_idx] == 2:
                 start_is_not_green = False
-            if file["Flags"][self.start_idx] == 20:
+            if file["LedState"][self.start_idx] == 4:
                 start_is_not_green = True
                 self.start_idx=self.start_idx+1
-            if file["Flags"][self.start_idx] == 17:
+            if file["LedState"][self.start_idx] == 1:
                 start_is_not_green = True
                 self.start_idx=self.start_idx+1
     
         # Find min data length
         file['Timestamp'] = (file['Timestamp'] - file['Timestamp'][0])
-        length = len(file['Flags']) - 1
+        length = len(file["LedState"]) - 1
         values = length - self.start_idx
         extras = values % 3
         min = int(length - extras)
@@ -172,7 +172,7 @@ class fiberObj:
         )
         
         fig.update_layout(
-            title = self.obj_name + ' ' + signal + ' normalized to ' + reference 
+            title = self.obj_name + ' Raw Data'
         )
         # fig.show()
         return fig
