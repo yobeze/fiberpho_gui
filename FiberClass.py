@@ -311,6 +311,7 @@ class fiberObj:
             y = self.fpho_data_df[signal + ' expfit'],
             mode = "lines",
             line = go.scatter.Line(color="Purple"),
+            name = 'Biexponential fitted to Signal',
             text = 'Biexponential fitted to Signal',
             showlegend = True), row = 1, col = 1
         )
@@ -320,6 +321,7 @@ class fiberObj:
             y = self.fpho_data_df[signal + ' normed to exp'],
             mode = "lines",
             line = go.scatter.Line(color="Green"),
+            name = 'Signal Normalized to Biexponential',
             text = 'Signal Normalized to Biexponential',
             showlegend = True), row = 1, col = 2
         )
@@ -339,6 +341,7 @@ class fiberObj:
             y = self.fpho_data_df[reference + ' expfit'],
             mode = "lines",
             line = go.scatter.Line(color="Purple"),
+            name = 'Biexponential fit to Reference',
             text = 'Biexponential fit to Reference',
             showlegend = True), row = 2, col = 1
         )
@@ -348,6 +351,7 @@ class fiberObj:
             y = self.fpho_data_df[reference + ' normed to exp'],
             mode = "lines",
             line = go.scatter.Line(color="Cyan"),
+            name = 'Reference Normalized to Biexponential',
             text = 'Reference Normalized to Biexponential',
             showlegend = True), row = 2, col = 2
         )
@@ -357,6 +361,7 @@ class fiberObj:
             y = self.fpho_data_df[signal + ' normed to exp'],
             mode = "lines",
             line = go.scatter.Line(color="Green"),
+            name = 'Signal Normalized to Biexponential',
             text = 'Signal Normalized to Biexponential',
             showlegend = True), row = 3, col = 1
         )
@@ -367,6 +372,7 @@ class fiberObj:
             y = self.fpho_data_df[reference + ' fitted to ' + signal],
             mode = "lines",
             line = go.scatter.Line(color="Cyan"),
+            name = 'Reference linearly scaled to signal',
             text = 'Reference linearly scaled to signal',
             showlegend = True), row = 3, col = 1  
         )
@@ -377,6 +383,7 @@ class fiberObj:
             y = self.fpho_data_df[signal[4:] + '_Normalized'],
             mode="lines",
             line = go.scatter.Line(color = "Pink"), 
+            name = 'Final Normalized Signal',
             text = 'Final Normalized Signal',
             showlegend = True), row = 3, col = 2
 
@@ -454,12 +461,14 @@ class fiberObj:
                 mode = "lines",
                 line = go.scatter.Line(color = "Green"),
                 name = channel,
-                showlegend = True), row = i + 1, col = 1
+                showlegend = False), row = i + 1, col = 1
                 )
             
             colors = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52']
             j=0
+            behaviorname = ""
             for j, beh in enumerate(behaviors):
+                behaviorname= behaviorname + " " + beh
                 temp_beh_string = ''.join([key for key in self.fpho_data_df[beh]])
                 pattern = re.compile(r'S[O]+E')
                 bouts = pattern.finditer(temp_beh_string)
@@ -515,7 +524,7 @@ class fiberObj:
                     showarrow = False,
                     row = i + 1, col = 1
                     )
-        # fig.show()
+                fig.update_layout(title = behaviorname + ' for ' + self.obj_name)
         return fig
         
     
@@ -532,26 +541,28 @@ class fiberObj:
             mode="lines",
             line=go.scatter.Line(color="Green"),
             name =channel,
-            showlegend=True), row=1, col=1
+            showlegend=False), row=1, col=1
         )
         sum=[]
         zscoresum=[]
-        for time in BehTimes:
+        for i, time in enumerate(BehTimes):
             tempy=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-time_before):self.fpho_data_df['time_green'].searchsorted(time+time_after),channel].values.tolist()
             if len(sum)>1:
                 sum = [sum[i] + tempy[i] for i in range(len(tempy))]
             else:
                 sum=tempy
             x=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-time_before):self.fpho_data_df['time_green'].searchsorted(time+time_after),'time_green']
+            trace_color = 'rgb(' + str(int((i+1)*255/(len(BehTimes)))) + ', 0, 255)'
             fig.add_vline(x=time, line_dash="dot", row=1, col=1)
             fig.add_trace(
                 go.Scatter( 
                 x=x-time,
                 y=ss.zscore(self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-time_before):self.fpho_data_df['time_green'].searchsorted(time+time_after),channel]),
                 mode="lines",
-                line=dict(color="Black", width=0.5, dash = 'dot'),
-                name =channel,
-                showlegend=False), row=1, col=2
+                line=dict(color=trace_color, width=2),
+                name = 'Event:' + str(i),
+                text = 'Event:' + str(i),
+                showlegend=True), row=1, col=2
             )
         fig.add_vline(x=0, line_dash="dot", row=1, col=2)
         fig.add_trace(
@@ -559,9 +570,10 @@ class fiberObj:
             x=x-time,
             y=ss.zscore([i/len(BehTimes) for i in sum]),
             mode="lines",
-            line=dict(color="Red", width=3),
-            name =channel,
-            showlegend=False), row=1, col=2
+            line=dict(color="Black", width=5),
+            name ='average',
+            text = 'average',
+            showlegend=True), row=1, col=2
             )
         fig.update_layout(
         #title= beh + ' overlaid on ' + channel + ' for animal ' +str(self.fpho_data_df['animalID'][0]) + ' on ' + str(self.fpho_data_df['date'][0]),
@@ -581,7 +593,6 @@ class fiberObj:
         
         sig1 = self.fpho_data_df[channel]
         sig2 = obj2.fpho_data_df[channel]
-
         time = self.fpho_data_df['time_green']
     
         #sig1smooth = ss.zscore(uniform_filter1d(sig1, size=i))
@@ -616,9 +627,7 @@ class fiberObj:
         )
 
         #calculates the pearsons R  
-        print(sig1, sig2)
         [r, p] = ss.pearsonr(sig1, sig2)
-        print(r, p)
         self.full_corr_results[obj2.obj_name, channel] = (r, p)
         obj2.full_corr_results[self.obj_name, channel] = (r, p)
         
@@ -710,3 +719,6 @@ class fiberObj:
         obj2.beh_corr_results[channel].loc[self.obj_name, beh]=(r,p)
         
         return fig
+    
+    def get_object_info(self):
+        return
