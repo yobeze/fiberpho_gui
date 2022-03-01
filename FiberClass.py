@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import scipy.stats as ss
 import re
 
-pn.extension()
+pn.extension('plotly')
 
 class fiberObj:
 #figure out if list/dict is better than dataframe
@@ -32,7 +32,7 @@ class fiberObj:
         self.exp_start_time = exp_start_time
         self.behaviors = set()
         self.channels = set()
-        self.full_corr_results = pd.DataFrame([], index=[self.obj_name])
+        self.full_corr_results = pd.DataFrame([], index = [self.obj_name])
         self.beh_corr_results = {}
         
         #modify to accept dictionary w values
@@ -589,7 +589,7 @@ class fiberObj:
         fig = make_subplots(rows = 1, cols = 2)
         #creates a scatter plot
         fig.add_trace(
-            go.Scatter(
+            go.Scattergl(
             x = sig1,
             y = sig2,
             mode = "markers",
@@ -598,7 +598,7 @@ class fiberObj:
         )
         #plots sig1
         fig.add_trace(
-            go.Scatter(
+            go.Scattergl(
             x = time,
             y = sig1,
             mode = "lines",
@@ -607,7 +607,7 @@ class fiberObj:
         )
         #plots sig2
         fig.add_trace(
-            go.Scatter(
+            go.Scattergl(
             x = time,
             y = sig2,
             mode = "lines",
@@ -616,7 +616,9 @@ class fiberObj:
         )
 
         #calculates the pearsons R  
+        print(sig1, sig2)
         [r, p] = ss.pearsonr(sig1, sig2)
+        print(r, p)
         self.full_corr_results[obj2.obj_name, channel] = (r, p)
         obj2.full_corr_results[self.obj_name, channel] = (r, p)
         
@@ -653,7 +655,7 @@ class fiberObj:
         sig2 = behaviorSlice2[channel]
         fig = make_subplots(rows = 1, cols = 2)
         fig.add_trace(
-            go.Scatter(
+            go.Scattergl(
             x = sig1,
             y = sig2,
             mode = "markers",
@@ -692,7 +694,7 @@ class fiberObj:
         fig.update_xaxes(title_text = 'Time (s)', col = 1, row = 1)
         fig.update_yaxes(title_text = 'Zscore', col = 1, row = 1)
 
-        fig.show()
+        # fig.show()
         #fig.write_image('together_seperate1.pdf')
         [r, p] = ss.pearsonr(sig1, sig2)
         #print(sig1.iloc[0:len(sig1)*(1/3)])
@@ -703,7 +705,8 @@ class fiberObj:
         # else:
         #     [r, p] = ['na', 'na']
         #     print(behaviorname + ' not found in this trial')
+        print(r, p)
         self.beh_corr_results[channel].loc[obj2.obj_name, beh]=(r,p)  
         obj2.beh_corr_results[channel].loc[self.obj_name, beh]=(r,p)
-
+        
         return fig
