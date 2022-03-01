@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import scipy.stats as ss
 import re
 
-pn.extension()
+pn.extension('plotly')
 
 class fiberObj:
 #figure out if list/dict is better than dataframe
@@ -589,7 +589,7 @@ class fiberObj:
         fig = make_subplots(rows = 1, cols = 2)
         #creates a scatter plot
         fig.add_trace(
-            go.Scatter(
+            go.Scattergl(
             x = sig1,
             y = sig2,
             mode = "markers",
@@ -598,7 +598,7 @@ class fiberObj:
         )
         #plots sig1
         fig.add_trace(
-            go.Scatter(
+            go.Scattergl(
             x = time,
             y = sig1,
             mode = "lines",
@@ -607,7 +607,7 @@ class fiberObj:
         )
         #plots sig2
         fig.add_trace(
-            go.Scatter(
+            go.Scattergl(
             x = time,
             y = sig2,
             mode = "lines",
@@ -655,7 +655,7 @@ class fiberObj:
         sig2 = behaviorSlice2[channel]
         fig = make_subplots(rows = 1, cols = 2)
         fig.add_trace(
-            go.Scatter(
+            go.Scattergl(
             x = sig1,
             y = sig2,
             mode = "markers",
@@ -663,7 +663,7 @@ class fiberObj:
             showlegend = False), row = 1, col = 2
         )
         fig.add_trace(
-            go.Scatter(
+            go.Scattergl(
             x = time,
             y = sig1,
             mode = "lines",
@@ -672,7 +672,7 @@ class fiberObj:
             showlegend = False), row = 1, col = 1
         )
         fig.add_trace(
-            go.Scatter(
+            go.Scattergl(
             x = time,
             y = sig2,
             mode = "lines",
