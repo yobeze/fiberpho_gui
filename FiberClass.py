@@ -545,39 +545,42 @@ class fiberObj:
         )
         sum=[]
         zscoresum=[]
+        n_events = 0
         for i, time in enumerate(BehTimes):
-            tempy=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-time_before):self.fpho_data_df['time_green'].searchsorted(time+time_after),channel].values.tolist()
-            if len(sum)>1:
-                sum = [sum[i] + tempy[i] for i in range(len(tempy))]
-            else:
-                sum=tempy
-            x=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-time_before):self.fpho_data_df['time_green'].searchsorted(time+time_after),'time_green']
-            trace_color = 'rgb(' + str(int((i+1)*255/(len(BehTimes)))) + ', 0, 255)'
-            fig.add_vline(x=time, line_dash="dot", row=1, col=1)
-            fig.add_trace(
-                go.Scatter( 
-                x=x-time,
-                y=ss.zscore(self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-time_before):self.fpho_data_df['time_green'].searchsorted(time+time_after),channel]),
-                mode="lines",
-                line=dict(color=trace_color, width=2),
-                name = 'Event:' + str(i),
-                text = 'Event:' + str(i),
-                showlegend=True), row=1, col=2
-            )
+            start_idx=self.fpho_data_df['time_green'].searchsorted(time-time_before)
+            end_idx=self.fpho_data_df['time_green'].searchsorted(time+time_after)
+            if start_idx > 0 and end_idx < len(self.fpho_data_df['time_green'])-1:
+                n_events = n_events+1
+                tempy=self.fpho_data_df.loc[start_idx:end_idx, channel].values.tolist()
+                if len(sum)>1:
+                    sum = [sum[i] + tempy[i] for i in range(len(tempy))]
+                else:
+                    sum=tempy
+                x=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-time_before):self.fpho_data_df['time_green'].searchsorted(time+time_after),'time_green']
+                trace_color = 'rgb(' + str(int((i+1)*255/(len(BehTimes)))) + ', 0, 255)'
+                fig.add_vline(x=time, line_dash="dot", row=1, col=1)
+                fig.add_trace(
+                    go.Scatter( 
+                    x=x-time,
+                    y=ss.zscore(self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-time_before):self.fpho_data_df['time_green'].searchsorted(time+time_after),channel]),
+                    mode="lines",
+                    line=dict(color=trace_color, width=2),
+                    name = 'Event:' + str(i),
+                    text = 'Event:' + str(i),
+                    showlegend=True), row=1, col=2
+                )
         fig.add_vline(x=0, line_dash="dot", row=1, col=2)
         fig.add_trace(
             go.Scatter( 
             x=x-time,
-            y=ss.zscore([i/len(BehTimes) for i in sum]),
+            y=ss.zscore([i/n_events for i in sum]),
             mode="lines",
             line=dict(color="Black", width=5),
             name ='average',
             text = 'average',
             showlegend=True), row=1, col=2
             )
-        fig.update_layout(
-        #title= beh + ' overlaid on ' + channel + ' for animal ' +str(self.fpho_data_df['animalID'][0]) + ' on ' + str(self.fpho_data_df['date'][0]),
-        xaxis_title='Time')
+        fig.update_layout(title = 'Z-score of ' + beh + ' for ' + self.obj_name + ' in channel ' + channel)
         return fig
         
          #return the pearsons correlation coefficient and r value between 2 full channels and plots the signals overlaid and thier scatter plot
