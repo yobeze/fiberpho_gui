@@ -90,15 +90,23 @@ def run_init_fiberobj(event = None):
         
         
 # def run_upload_fiberobj(event = None):
-    
-    
+#     with open(filename, "rb") as f:
+#         while True:
+#             try:
+#                 yield temp = pickle.load(f)
+#                 fiber_objs[temp.obj_name
+#             except EOFError:
+#                 break
+
     
     
 def run_save_fiberobj(event = None):
     for objs in upload_obj:
         temp = fiber_objs[objs]
-        with open( objs + '.pickle', 'wb') as handle:
+        with open(objs + '.pickle', 'wb') as handle:
             pickle.dump(temp, handle)
+            #add success message
+            
             
             
             
@@ -281,14 +289,14 @@ init_obj_box = pn.WidgetBox('# Input Params', fpho_input, input_col, upload_butt
 #Load fiberobj Widget
 
 #Input variables
-upload_pkl = pn.widgets.FileInput(name = 'Upload Saved Fiber Objects', accept = '.P') #File input parameter
+upload_pkl = pn.widgets.FileInput(name = 'Upload Saved Fiber Objects', accept = '.pickle') #File input parameter
 
 #Buttons
 upload_pkl_btn = pn.widgets.Button(name = 'Upload Object', button_type = 'primary', width = 500, sizing_mode = 'stretch_width', align = 'end')
-# upload_pkl_btn.on_click(run_upload_fiberobj) #Button action
+upload_pkl_btn.on_click(run_upload_fiberobj) #Button action
 
 #Box
-# load_obj_box = pn.WidgetBox('# Reload saved Fiber Objects', upload_pkl, upload_pkl_btn)
+load_obj_box = pn.WidgetBox('# Reload saved Fiber Objects', upload_pkl, upload_pkl_btn)
 
 # ----------------------------------------------------- #
 
@@ -303,7 +311,7 @@ save_obj_btn = pn.widgets.Button(name = 'Save Object', button_type = 'primary', 
 save_obj_btn.on_click(run_save_fiberobj) #Button action
 
 #Box
-init_obj_box = pn.WidgetBox('# Save Fiber Objects for later', save_obj_selecta, save_obj_btn)
+save_obj_box = pn.WidgetBox('# Save Fiber Objects for later', save_obj_selecta, save_obj_btn)
 
 # ----------------------------------------------------- #
 
@@ -450,6 +458,7 @@ beh_corr_card = pn.Card(beh_corr_widget, title = 'Behavior Specific Pearsons Cor
 
 #Append widgets to gui template
 template.sidebar.append(init_obj_box)
+template.sidebar.append(save_obj_box)
 template.main.append(plot_raw_card)
 template.main.append(norm_sig_card)
 template.main.append(upload_beh_card)
