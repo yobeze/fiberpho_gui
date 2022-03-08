@@ -43,6 +43,8 @@ pn.extension('plotly', sizing_mode = "stretch_width", loading_color = '#00aa41')
 
 fiber_objs = {}
 
+fiber_objs = {}
+
 #Read fpho data
 def run_init_fiberobj(event = None):
     # .value param to extract variables properly
@@ -87,29 +89,36 @@ def run_init_fiberobj(event = None):
         pearsons_selecta2.options = [*existing_objs]
         beh_corr_selecta1.options = [*existing_objs]
         beh_corr_selecta2.options = [*existing_objs]
-        
-        
-# def run_upload_fiberobj(event = None):
-#     with open(filename, "rb") as f:
-#         while True:
-#             try:
-#                 yield temp = pickle.load(f)
-#                 fiber_objs[temp.obj_name
-#             except EOFError:
-#                 break
+        save_obj_selecta.options = [*existing_objs]
 
-    
-    
+        
+def run_upload_fiberobj(event = None):
+    upload = upload_pkl_selecta.filename
+    for filename in upload:
+        with io.open (filename, 'rb') as file:
+            try:
+                temp = pickle.load(file)
+            except EOFError:
+                break
+        fiber_objs[temp.obj_name] = temp
+    existing_objs = fiber_objs
+    obj_selecta.options = [*existing_objs]
+    norm_selecta.options = [*existing_objs]
+    behav_selecta.options = [*existing_objs]
+    plot_beh_selecta.options = [*existing_objs]
+    zscore_selecta.options = [*existing_objs]
+    pearsons_selecta1.options = [*existing_objs]
+    pearsons_selecta2.options = [*existing_objs]
+    beh_corr_selecta1.options = [*existing_objs]
+    beh_corr_selecta2.options = [*existing_objs]
+    save_obj_selecta.options = [*existing_objs]    
+        
+        
 def run_save_fiberobj(event = None):
-    for objs in upload_obj:
+    for obj in save_obj_selecta.value:
         temp = fiber_objs[objs]
-        with open(objs + '.pickle', 'wb') as handle:
+        with open( objs + '.pickle', 'wb') as handle:
             pickle.dump(temp, handle)
-            #add success message
-            
-            
-            
-            
             
 # @pn.depends('obj_selecta.value', watch = True)
 def run_plot_raw_trace(event = None):
@@ -251,7 +260,6 @@ def update_selecta_options(event = None):
     available_behaviors = obj1.behaviors & obj2.behaviors
     beh_corr_channel_selecta.options = list(available_channels)
     beh_corr_behavior_selecta.options = list(available_behaviors)
-
 
 # In[3]:
 
