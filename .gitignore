@@ -1,6 +1,4 @@
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
-.pyc
-*/.pyc/*
-.pickle
-*/.pickle/*
+*.pyc
+*.pickle
