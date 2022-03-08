@@ -583,7 +583,7 @@ class fiberObj:
         fig.update_layout(title = 'Z-score of ' + beh + ' for ' + self.obj_name + ' in channel ' + channel)
         return fig
         
-         #return the pearsons correlation coefficient and r value between 2 full channels and plots the signals overlaid and thier scatter plot
+         #return the pearsons correlation coefficient and r value between 2 full channels and plots the signals overlaid and their scatter plot
     def within_trial_pearsons(self, obj2, channel):
         if not channel in self.full_corr_results.columns:
             self.full_corr_results.loc[:, channel] = [(float("NaN"), float("NaN")) for i in range(len(self.full_corr_results.index))]
