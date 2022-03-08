@@ -24,12 +24,13 @@ class fiberObj:
     colIdx = 0
     
     
-    def __init__(self, file, obj, fiber_num, animal, exp_date, exp_start_time):
+    def __init__(self, file, obj, fiber_num, animal, exp_date, exp_start_time, filename):
         self.obj_name = obj
         self.fiber_num = fiber_num
         self.animal_num = animal
         self.exp_date = exp_date
         self.exp_start_time = exp_start_time
+        self.file_name = filename
         self.behaviors = set()
         self.channels = set()
         self.full_corr_results = pd.DataFrame([], index = [self.obj_name])
@@ -723,5 +724,5 @@ class fiberObj:
         
         return fig
     
-    def get_object_info(self):
-        return
+    # def get_object_info(self):
+    #     return
