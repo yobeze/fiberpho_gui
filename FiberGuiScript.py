@@ -110,10 +110,11 @@ def run_upload_fiberobj(event = None):
         
         
 def run_save_fiberobj(event = None):
-    for obj in save_obj_selecta.value:
-        temp = fiber_objs[obj]
-        with open( obj + '.pickle', 'wb') as handle:
-            pickle.dump(temp, handle)
+    obj = save_obj_selecta.value
+    temp = fiber_objs[obj]
+    with open( obj + '.pickle', 'wb') as handle:
+        pickle.dump(temp, handle)
+    save_obj_box.append('# ' + temp.obj_name + ' pickled succesfully')
             
 
 def run_plot_raw_trace(event = None):
