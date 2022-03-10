@@ -31,6 +31,7 @@ class fiberObj:
         self.exp_date = exp_date
         self.exp_start_time = exp_start_time
         self.file_name = filename
+        self.beh_filename = None
         self.behaviors = set()
         self.channels = set()
         self.full_corr_results = pd.DataFrame([], index = [self.obj_name])
@@ -447,6 +448,7 @@ class fiberObj:
                     print("\nStart and stops for state behavior:" + beh + " are not paired correctly.\n")
                     sys.exit()
 
+        self.beh_filename = BORIS_filename
         return
     
     

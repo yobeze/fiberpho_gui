@@ -28,20 +28,12 @@ from scipy.optimize import curve_fit
 from plotly.subplots import make_subplots
 from pathlib import Path
 import pickle
-
 from tornado.ioloop import IOLoop
-# from setup_stuff import read_csv, createObj
 import FiberClass as fc
-
-# import plotly
 
 pn.extension('plotly', sizing_mode = "stretch_width", loading_color = '#00aa41')
 
-
 # In[2]:
-
-
-fiber_objs = {}
 
 fiber_objs = {}
 
@@ -49,6 +41,7 @@ fiber_objs = {}
 def run_init_fiberobj(event = None):
     # .value param to extract variables properly
     value = fpho_input.value
+    file_name = fpho_input.filename
     obj_name = input_1.value
     fiber_num = input_2.value
     animal_num = input_3.value
@@ -58,7 +51,7 @@ def run_init_fiberobj(event = None):
         try:
             #Add to list
             input_params = []
-            input_params.extend([obj_name, fiber_num, animal_num, exp_date, exp_time])
+            input_params.extend([obj_name, fiber_num, animal_num, exp_date, exp_time, file_name])
             string_io = io.StringIO(value.decode("utf8"))
             df = pd.read_csv(string_io) #Read into dataframe
         except FileNotFoundError:
@@ -73,7 +66,7 @@ def run_init_fiberobj(event = None):
         sys.exit(4)
     else:
         #Create new object
-        new_obj = fc.fiberObj(df, input_params[0], input_params[1], input_params[2], input_params[3], input_params[4])
+        new_obj = fc.fiberObj(df, input_params[0], input_params[1], input_params[2], input_params[3], input_params[4], input_params[5])
         #Add to dict
         fiber_objs[input_params[0]] = new_obj
         existing_objs = fiber_objs
@@ -90,6 +83,7 @@ def run_init_fiberobj(event = None):
         beh_corr_selecta1.options = [*existing_objs]
         beh_corr_selecta2.options = [*existing_objs]
         save_obj_selecta.options = [*existing_objs]
+        info_selecta.options = [*existing_objs]
 
         
 def run_upload_fiberobj(event = None):
@@ -100,7 +94,7 @@ def run_upload_fiberobj(event = None):
                 temp = pickle.load(file)
             except EOFError:
                 break
-        fiber_objs[temp.obj_name] = temp
+    fiber_objs[temp.obj_name] = temp
     existing_objs = fiber_objs
     obj_selecta.options = [*existing_objs]
     norm_selecta.options = [*existing_objs]
@@ -111,16 +105,17 @@ def run_upload_fiberobj(event = None):
     pearsons_selecta2.options = [*existing_objs]
     beh_corr_selecta1.options = [*existing_objs]
     beh_corr_selecta2.options = [*existing_objs]
-    save_obj_selecta.options = [*existing_objs]    
+    save_obj_selecta.options = [*existing_objs]
+    info_selecta.options = [*existing_objs]
         
         
 def run_save_fiberobj(event = None):
     for obj in save_obj_selecta.value:
-        temp = fiber_objs[objs]
-        with open( objs + '.pickle', 'wb') as handle:
+        temp = fiber_objs[obj]
+        with open( obj + '.pickle', 'wb') as handle:
             pickle.dump(temp, handle)
             
-# @pn.depends('obj_selecta.value', watch = True)
+
 def run_plot_raw_trace(event = None):
     # .value param to extract variables properly
     selected_objs = obj_selecta.value
@@ -133,6 +128,7 @@ def run_plot_raw_trace(event = None):
         # plot_pane.trigger('object')
         plot_raw_card.append(plot_pane) #Add figure to template
 
+        
 def run_normalize_a_signal(event = None):
     # .value param to extract variables properly
     selected_objs = norm_selecta.value
@@ -260,9 +256,36 @@ def update_selecta_options(event = None):
     available_behaviors = obj1.behaviors & obj2.behaviors
     beh_corr_channel_selecta.options = list(available_channels)
     beh_corr_behavior_selecta.options = list(available_behaviors)
+    
+    
+    
+    
+# Retrieves and displays relevant fiber object attributes
+# @pn.depends('')
+def get_obj_info(event = None):
+    selected_objs = info_selecta.value
+    list_of_objs = []
+    if selected_objs:
+        for obj in selected_objs:
+            temp = fiber_objs[obj]
+            data = { # Grabs objects attributes and fills a dataframe
+                'Object Name':[temp.obj_name],
+                'Fiber #':[temp.fiber_num],
+                'Animal #':[temp.animal_num],
+                'Exp. Date':[temp.exp_date],
+                'Exp. Start Time':[temp.exp_start_time],
+                'FiberPho Filename':[temp.file_name],
+                'Behavior Filename':[temp.beh_filename]
+            }
+            list_of_objs.append(data)
+        
+        df = pd.DataFrame(list_of_objs)
+        info_table = pn.widgets.Tabulator(df, theme = "fast", height = 300, page_size = 10)
+        obj_info_card.append(info_table)
+
+
 
 # In[3]:
-
 
 #Template and widget declarations
 ACCENT_COLOR = "#0072B5"
@@ -272,7 +295,6 @@ template = pn.template.MaterialTemplate(site = 'Donaldson Lab: Fiber Photometry'
                                        )
 
 #Dict of objects
-
 # ----------------------------------------------------- # 
 #Init fiberobj Widget
 
@@ -297,14 +319,14 @@ init_obj_box = pn.WidgetBox('# Input Params', fpho_input, input_col, upload_butt
 #Load fiberobj Widget
 
 #Input variables
-upload_pkl = pn.widgets.FileInput(name = 'Upload Saved Fiber Objects', accept = '.pickle') #File input parameter
+upload_pkl_selecta = pn.widgets.FileInput(name = 'Upload Saved Fiber Objects', accept = '.pickle', multiple=True) #File input parameter
 
 #Buttons
 upload_pkl_btn = pn.widgets.Button(name = 'Upload Object', button_type = 'primary', width = 500, sizing_mode = 'stretch_width', align = 'end')
 upload_pkl_btn.on_click(run_upload_fiberobj) #Button action
 
 #Box
-load_obj_box = pn.WidgetBox('# Reload saved Fiber Objects', upload_pkl, upload_pkl_btn)
+load_obj_box = pn.WidgetBox('# Reload saved Fiber Objects', upload_pkl_selecta, upload_pkl_btn)
 
 # ----------------------------------------------------- #
 
@@ -337,7 +359,6 @@ plot_raw_btn.on_click(run_plot_raw_trace)
 plot_options = pn.Column(obj_selecta, plot_raw_btn)
 plot_raw_widget = pn.WidgetBox('# Options', plot_options)
 plot_raw_card = pn.Card(plot_raw_widget, title = 'Plot Raw Signal', background = 'WhiteSmoke', width = 600, collapsed = True)
-
 # ----------------------------------------------------- # 
 #Normalize signal to reference Widget
 #Input vairables
@@ -463,10 +484,26 @@ beh_corr_card = pn.Card(beh_corr_widget, title = 'Behavior Specific Pearsons Cor
 
 
 # ----------------------------------------------------- # 
+#Object info widget
+
+#Input variables
+info_selecta = pn.widgets.MultiSelect(name = 'Objects', value = [], options = [], )
+
+#Buttons
+obj_info_btn = pn.widgets.Button(name = "Read", button_type = 'primary', width = 200)
+obj_info_btn.on_click(get_obj_info)
+
+#Table
+obj_info_box = pn.WidgetBox(info_selecta, obj_info_btn)
+obj_info_card = pn.Card(obj_info_box, title = "Display Object Attributes", background = 'WhiteSmoke', width = 200, collapsed = True)
+
+# ----------------------------------------------------- # 
 
 #Append widgets to gui template
 template.sidebar.append(init_obj_box)
 template.sidebar.append(save_obj_box)
+template.sidebar.append(load_obj_box)
+template.sidebar.append(obj_info_card)
 template.main.append(plot_raw_card)
 template.main.append(norm_sig_card)
 template.main.append(upload_beh_card)
@@ -475,8 +512,7 @@ template.main.append(zscore_card)
 template.main.append(pearsons_card)
 template.main.append(beh_corr_card)
 # template.main.append(visuals)
-template.servable()
-
+server = template.servable()
 
 # In[4]:
 
