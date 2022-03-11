@@ -113,7 +113,7 @@ def run_save_fiberobj(event = None):
     obj = save_obj_selecta.value
     for obj in save_obj_selecta.value:
         temp = fiber_objs[obj]
-        with open( obj + '.pickle', 'wb') as handle:
+        with open(obj + '.pickle', 'wb') as handle:
             pickle.dump(temp, handle)
         save_obj_box.append('# ' + temp.obj_name + ' pickled succesfully')
             
@@ -263,28 +263,59 @@ def update_selecta_options(event = None):
     
     
 # Retrieves and displays relevant fiber object attributes
-# @pn.depends('')
+@pn.depends('info_selecta.value', watch = True)
 def get_obj_info(event = None):
     selected_objs = info_selecta.value
     list_of_objs = []
+    data = { 
+        'Object Name':[],
+        'Fiber #':[],
+        'Animal #':[],
+        'Exp. Date':[],
+        'Exp. Start Time':[],
+        'FiberPho Filename':[],
+        'Behavior Filename':[]
+        }
     if selected_objs:
+        # Grabs objects attributes and fills a dataframe
         for obj in selected_objs:
             temp = fiber_objs[obj]
-            data = { # Grabs objects attributes and fills a dataframe
-                'Object Name':[temp.obj_name],
-                'Fiber #':[temp.fiber_num],
-                'Animal #':[temp.animal_num],
-                'Exp. Date':[temp.exp_date],
-                'Exp. Start Time':[temp.exp_start_time],
-                'FiberPho Filename':[temp.file_name],
-                'Behavior Filename':[temp.beh_filename]
-            }
-            list_of_objs.append(data)
+            data["Object Name"].append(temp.obj_name)
+            data["Fiber #"].append(temp.fiber_num)
+            data["Animal #"].append(temp.animal_num)
+            data["Exp. Date"].append(temp.exp_date)
+            data["Exp. Start Time"].append(temp.exp_start_time)
+            data["FiberPho Filename"].append(temp.file_name)
+            data["Behavior Filename"].append(temp.beh_filename)
+        list_of_objs.append(data)
         
-        df = pd.DataFrame(list_of_objs)
-        info_table = pn.widgets.Tabulator(df, theme = "fast", height = 300, page_size = 10)
-        obj_info_card.append(info_table)
-
+    df = pd.DataFrame(list_of_objs)
+    info_table = pn.widgets.Tabulator(df, theme = "fast", height = 300, page_size = 10)
+    obj_info_card.append(info_table)
+        
+        # Code in progress to dynamically update objects table #
+    # selected_objs = info_selecta.value
+    # myDict = {'Object Name':[], 
+    #           'Fiber #':[],
+    #           'Animal #':[],
+    #           'Exp. Date':[],
+    #           'Exp. Start Time':[],
+    #           'FiberPho File':[]
+    #           # 'Behavior File':[]
+    #          }   
+    # if selected_objs:
+    #     for obj in selected_objs:
+    #         temp = fiber_objs[obj]
+    #         myDict['Object Name'].append(temp.obj_name)
+    #         myDict['Object Name'].append(temp.fiber_num)
+    #         myDict['Object Name'].append(temp.animal_num)
+    #         myDict['Object Name'].append(temp.exp_date)
+    #         myDict['Object Name'].append(temp.exp_start_time)
+    #         myDict['Object Name'].append(temp.file_name)
+    #         # myDict['Object Name'].append(temp.beh_filename)
+    #     df = pd.DataFrame(myDict)
+    #     info_table = pn.widgets.Tabulator(df, theme = "fast", height = 300, page_size = 10)
+    #     obj_info_card.append(df)
 
 
 # In[3]:
