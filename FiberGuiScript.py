@@ -37,7 +37,7 @@ pn.extension('plotly', sizing_mode = "stretch_width", loading_color = '#00aa41')
 #Dictionary of fiber objects
 fiber_objs = {}
 #Dataframe of object's info
-fiber_data = pd.DataFrame(columns = ['Fiber #', 'Animal #', 'Exp. Date', 'Exp. Start Time', 'Filename'])
+fiber_data = pd.DataFrame(columns = ['Fiber #', 'Animal #', 'Exp. Date', 'Exp. Start Time', 'Filename', 'Behavior File'])
 
 #Read fpho data
 def run_init_fiberobj(event = None):
@@ -74,7 +74,7 @@ def run_init_fiberobj(event = None):
             #Adds to dict
             fiber_objs[input_params[0]] = new_obj
             #Adds to relevant info to dataframe
-            fiber_data.loc[input_params[0]] = ([input_params[1], input_params[2], input_params[3], input_params[4], input_params[5]])
+            fiber_data.loc[input_params[0]] = ([input_params[1], input_params[2], input_params[3], input_params[4], input_params[5], None])
             info_table.value = fiber_data
             existing_objs = fiber_objs
             #Updates selectors with new objects
@@ -103,7 +103,11 @@ def run_upload_fiberobj(event = None):
             except EOFError:
                 break
     fiber_objs[temp.obj_name] = temp
-    fiber_data.loc[temp.obj_name] = ([temp.fiber_num, temp.animal_num, temp.exp_date, temp.exp_start_time, temp.file_name])
+    if temp.beh_filename:
+        fiber_data.loc[temp.obj_name] = ([temp.fiber_num, temp.animal_num, temp.exp_date, temp.exp_start_time, temp.file_name, temp.beh_filename])
+    else:
+        fiber_data.loc[temp.obj_name] = ([temp.fiber_num, temp.animal_num, temp.exp_date, temp.exp_start_time, temp.file_name, None])
+
     info_table.value = fiber_data
     existing_objs = fiber_objs
     # Updates all cards with new objects
@@ -506,8 +510,8 @@ template.main.append(plot_beh_card)
 template.main.append(zscore_card)
 template.main.append(pearsons_card)
 template.main.append(beh_corr_card)
-# template.main.append(visuals)
-# server = template.servable()
+
+template.servable()
 
 
 # In[4]:

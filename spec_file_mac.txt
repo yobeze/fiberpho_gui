@@ -1,0 +1,3 @@
+# This file may be used to create an environment
+# Type the following command into your terminal:
+# $ conda create ....
