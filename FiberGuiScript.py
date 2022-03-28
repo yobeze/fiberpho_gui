@@ -280,7 +280,6 @@ def update_selecta_options(event = None):
     beh_corr_behavior_selecta.options = list(available_behaviors)
     
 
-    
 
 # In[3]:
 #Template and widget declarations
@@ -507,9 +506,8 @@ template.main.append(zscore_card)
 template.main.append(pearsons_card)
 template.main.append(beh_corr_card)
 # template.main.append(visuals)
-# server = template.servable()
 
-
+template.servable()
 # In[4]:
 
 

@@ -455,7 +455,7 @@ class fiberObj:
         
     def plot_behavior(self, behaviors, channels):
         # channels =[channel_dict[i] for i in channels_inputed]
-        fig = make_subplots(rows=len(channels), cols = 1, subplot_titles = [channel for channel in channels], shared_xaxes = True)
+        fig = make_subplots(rows = len(channels), cols = 1, subplot_titles = [channel for channel in channels], shared_xaxes = True)
         for i, channel in enumerate(channels):
             fig.add_trace(
                 go.Scatter(
