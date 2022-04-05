@@ -1,14 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
-
 # %load_ext autoreload
-
-
-# In[1]:
-
 
 # %autoreload 2
 
@@ -18,6 +8,7 @@ import param
 import panel as pn
 import pandas as pd
 import csv
+import numpy as np
 import os
 import random
 import ipywidgets as ipw
@@ -30,6 +21,13 @@ from pathlib import Path
 import pickle
 from tornado.ioloop import IOLoop
 import FiberClass as fc
+
+
+'''
+Command to run script:
+    panel serve --show FiberGuiScript.py --websocket-max-message-size=104876000 --autoreload
+'''
+
 
 pn.extension('plotly', sizing_mode = "stretch_width", loading_color = '#00aa41')
 
@@ -188,13 +186,14 @@ def run_plot_behavior(event = None):
 #Plot zscore of a point evnt
 def run_plot_zscore(event = None): 
     selected_objs = zscore_selecta.value
+    baseline_vals = np.array([baseline_start.value, baseline_end.value])
     #For len of selected objs, create and plot zscores
     for objs in selected_objs:
         temp = fiber_objs[objs]
         for beh in zbehs_selecta.value:
             for channel in zchannel_selecta.value:
                 plot_pane = pn.pane.Plotly(height = 500, sizing_mode = "stretch_width") #Creates pane for plotting
-                plot_pane.object = temp.plot_zscore(channel, beh, time_before.value, time_after.value) #Sets figure to plot variable
+                plot_pane.object = temp.plot_zscore(channel, beh, time_before.value, time_after.value, baseline_vals) #Sets figure to plot variable
                 zscore_card.append(plot_pane) #Add figure to template
                 
                 
@@ -419,8 +418,10 @@ plot_beh_card = pn.Card(plot_beh_widget, title = 'Plot Behavior', background = '
 zscore_selecta = pn.widgets.MultiSelect(name = 'Fiber Objects', value = [], options = [], )
 zbehs_selecta = pn.widgets.MultiSelect(name = 'Behavior', value = [], options = [], )
 zchannel_selecta = pn.widgets.MultiSelect(name = 'Signal', value = [], options = [], )
-time_before = pn.widgets.IntInput(name = 'Time before event(s)', width = 90, placeholder = 'Int', value=2)
-time_after = pn.widgets.IntInput(name = 'Time after initiation(s)', width = 90, placeholder = 'Int', value=5)
+time_before = pn.widgets.IntInput(name = 'Time before event(s)', width = 50, placeholder = 'Seconds', value = 2)
+time_after = pn.widgets.IntInput(name = 'Time after initiation(s)', width = 50, placeholder = 'Seconds', value = 5)
+baseline_start = pn.widgets.IntInput(name = '**Optional** Input Baseline start window', width = 50, placeholder = 'Seconds', value = 0)
+baseline_end = pn.widgets.IntInput(name = '**Leave at 0 if no**', width = 50, placeholder = 'Seconds', value = 0)
 
 
 #Buttons
@@ -431,7 +432,7 @@ options_btn.on_click(update_selecta_options) #Button action
 
 
 #Box
-zscore_options = pn.Column(zscore_selecta, options_btn, zchannel_selecta, zbehs_selecta, time_before, time_after, zscore_btn)
+zscore_options = pn.Column(zscore_selecta, options_btn, zchannel_selecta, zbehs_selecta, time_before, time_after, baseline_start, baseline_end, zscore_btn)
 zscore_widget = pn.WidgetBox('# Zscore Plot', zscore_options)
 zscore_card = pn.Card(zscore_widget, title = 'Zscore Plot', background = 'WhiteSmoke', width = 600, collapsed = True)
 
