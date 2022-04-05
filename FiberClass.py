@@ -657,7 +657,7 @@ class fiberObj:
             fig.add_vline(x = 0, line_dash = "dot", row = 1, col = 2)
             # Adds trace
             fig.add_trace(
-                # Scatter plot
+                # Scatter plott
                 go.Scatter( 
                 # Times starting as user input start and end time
                 x = x - time,
