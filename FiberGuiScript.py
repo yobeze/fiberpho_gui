@@ -31,7 +31,7 @@ Command to run script:
 
 pn.extension('plotly', sizing_mode = "stretch_width", loading_color = '#00aa41')
 
-# In[2]:
+
 #Dictionary of fiber objects
 fiber_objs = {}
 #Dataframe of object's info
@@ -187,13 +187,15 @@ def run_plot_behavior(event = None):
 def run_plot_zscore(event = None): 
     selected_objs = zscore_selecta.value
     baseline_vals = np.array([baseline_start.value, baseline_end.value])
+    # How user would like to apply the baseline window input
+    baseline_option = baseline_selecta.value
     #For len of selected objs, create and plot zscores
     for objs in selected_objs:
         temp = fiber_objs[objs]
         for beh in zbehs_selecta.value:
             for channel in zchannel_selecta.value:
                 plot_pane = pn.pane.Plotly(height = 500, sizing_mode = "stretch_width") #Creates pane for plotting
-                plot_pane.object = temp.plot_zscore(channel, beh, time_before.value, time_after.value, baseline_vals) #Sets figure to plot variable
+                plot_pane.object = temp.plot_zscore(channel, beh, time_before.value, time_after.value, baseline_vals, baseline_option) #Sets figure to plot variable
                 zscore_card.append(plot_pane) #Add figure to template
                 
                 
@@ -420,20 +422,29 @@ zbehs_selecta = pn.widgets.MultiSelect(name = 'Behavior', value = [], options = 
 zchannel_selecta = pn.widgets.MultiSelect(name = 'Signal', value = [], options = [], )
 time_before = pn.widgets.IntInput(name = 'Time before event(s)', width = 50, placeholder = 'Seconds', value = 2)
 time_after = pn.widgets.IntInput(name = 'Time after initiation(s)', width = 50, placeholder = 'Seconds', value = 5)
-baseline_start = pn.widgets.IntInput(name = '**Optional** Input Baseline start window', width = 50, placeholder = 'Seconds', value = 0)
-baseline_end = pn.widgets.IntInput(name = '**Leave at 0 if no**', width = 50, placeholder = 'Seconds', value = 0)
-
+baseline_start = pn.widgets.LiteralInput(name = 'Baseline Window Start Time (s)', width = 50, placeholder = 'Seconds', value = 0)
+baseline_end = pn.widgets.LiteralInput(name = 'Baseline Window End Time (s)', width = 50, placeholder = 'Seconds', value = 0)
+z_score_note = pn.pane.Markdown("""
+                                   ***Note :***<br>
+                                   - Baseline Window Parameters should be kept 0 unless you are using baseline<br> 
+                                   z-score computation method. The parameters are in seconds. <br>
+                                   - Please check where you would like your baseline window, **ONLY check one box**. <br>
+                                   """, width = 200)
 
 #Buttons
 zscore_btn = pn.widgets.Button(name = 'Zscore of Behavior', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
 zscore_btn.on_click(run_plot_zscore) #Button action
 options_btn = pn.widgets.Button(name = 'Update Options', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
 options_btn.on_click(update_selecta_options) #Button action
-
+baseline_selecta = pn.widgets.CheckBoxGroup(
+    name = 'Baseline Options', value = [], options = ['Start of Sample', 'Before Events', 'End of Sample'],
+    inline = True)
 
 #Box
-zscore_options = pn.Column(zscore_selecta, options_btn, zchannel_selecta, zbehs_selecta, time_before, time_after, baseline_start, baseline_end, zscore_btn)
-zscore_widget = pn.WidgetBox('# Zscore Plot', zscore_options)
+zscore_options = pn.Column(zscore_selecta, options_btn, zchannel_selecta, zbehs_selecta, time_before, time_after, zscore_btn)
+baseline_options = pn.Column(z_score_note, baseline_start, baseline_end, baseline_selecta)
+tabs = pn.Tabs(('Z-Score', zscore_options), ('Options', baseline_options))
+zscore_widget = pn.WidgetBox('# Zscore Plot', tabs)
 zscore_card = pn.Card(zscore_widget, title = 'Zscore Plot', background = 'WhiteSmoke', width = 600, collapsed = True)
 
 # ----------------------------------------------------- # 

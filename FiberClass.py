@@ -128,16 +128,7 @@ class fiberObj:
             raise error("No instance created")
             
             
-            
-     # Zscore calc helper
-    def zscore(self, ls, mean = None, std = None):
-        # Default Params, no arguments passed
-        if mean is None and std is None:
-            mean = np.nanmean(ls)
-            std = np.nanstd(ls)
-        # Calculates zscore per event in list  
-        new_ls = [(i - mean) / std for i in ls]
-        return new_ls       
+               
             
         
 #### End Helper Functions #### 
@@ -547,11 +538,11 @@ class fiberObj:
         return fig
         
     
-    def plot_zscore(self, channel, beh, time_before, time_after, baseline):
+    def plot_zscore(self, channel, beh, time_before, time_after, baseline = 0, base_option = 0):
         """Takes a dataframe and creates plot of z-scores for
         each time a select behavior occurs with the avg
     z-score and SEM"""
-        
+        print(type(base_option))
         # Finds all times where behavior starts, turns into list
         BehTimes=list(self.fpho_data_df[(self.fpho_data_df[beh]=='S')]['time_green'])
         # Initialize figure
@@ -580,14 +571,14 @@ class fiberObj:
         # i = index, time = actual time
         for i, time in enumerate(BehTimes):
             if i == 0:
-                start_event_time = time
+                start_event_time = time - time_before
             # time - time_Before = start_time for this event trace, time is the actual event start, time before is secs input before event start
             # Finds time in our data that is closest to time - time_before
             # start_idx = index of that time
-            start_idx=self.fpho_data_df['time_green'].searchsorted(time-time_before)
+            start_idx=self.fpho_data_df['time_green'].searchsorted(time - time_before)
             # time + time_after = end_time for this event trace, time is the actual event start, time after is secs input after event start
             # end_idx = index of that time
-            end_idx = self.fpho_data_df['time_green'].searchsorted(time+time_after)
+            end_idx = self.fpho_data_df['time_green'].searchsorted(time + time_after)
             
             # Edge case: If indexes are within bounds
             if start_idx > 0 and end_idx < len(self.fpho_data_df['time_green']) - 1:
@@ -613,7 +604,7 @@ class fiberObj:
                     # Scatter plot
                     go.Scatter( 
                     # Times starting at user input start time, ending at user input end time
-                    x=x-time,
+                    x = x - time,
                     # Y = Zscore of event trace
                     # y=ss.zscore(self.fpho_data_df.loc[start_idx:end_idx,channel]),
                     y = self.zscore(tempy), 
@@ -625,9 +616,10 @@ class fiberObj:
                 )
 
         # If no baseline params passed
-        if np.any((baseline == 0)):
+        # if np.any((baseline == 0)):
+        if not base_option:
             # Vertical line for event start 
-            fig.add_vline(x=0, line_dash="dot", row=1, col=2)
+            fig.add_vline(x = 0, line_dash = "dot", row = 1, col = 2)
             # Adds trace
             fig.add_trace(
                 # Scatter plot
@@ -642,24 +634,28 @@ class fiberObj:
                 text = 'average',
                 showlegend = True), row = 1, col = 2
                 )
-        else:
+        elif base_option[0] == 'Start of Sample':
             # idx = np.where((start_event_time > baseline[0]) & (start_event_time < baseline[1]))
             # Find baseline start/end index
             # Start event time is the first occurrence of event, this option will be for a baseline at the beginning of the trace
             base_start_idx = self.fpho_data_df['time_green'].searchsorted(start_event_time + baseline[0])
             base_end_idx = self.fpho_data_df['time_green'].searchsorted(start_event_time + baseline[1])
             # Calc mean and std for values within window
-            base_mean = np.nanmean(self.fpho_data_df.loc[base_start_idx:base_end_idx, 'time_green']) 
-            base_std = np.nanstd(self.fpho_data_df.loc[base_start_idx:base_end_idx, 'time_green'])
-            print(base_mean, base_std)
+            base_mean = np.nanmean(self.fpho_data_df.loc[base_start_idx:base_end_idx, channel]) 
+            base_std = np.nanstd(self.fpho_data_df.loc[base_start_idx:base_end_idx, channel])
+            # Ask kathleen about modifying graph
+            # window_vals = self.fpho_data_df.loc[base_start_idx:base_end_idx, channel].values.tolist()
+            # print(base_start_idx, base_end_idx, start_event_time)
+            
+            # x = self.fpho_data_df.loc[start_idx:end_idx,'time_green']
             # Same scatter plot but adhering to baseline window
             # Vertical line for event start 
             fig.add_vline(x = 0, line_dash = "dot", row = 1, col = 2)
             # Adds trace
             fig.add_trace(
-                # Scatter plott
+                # Scatter plot
                 go.Scatter( 
-                # Times starting as user input start and end time
+                # Times for baseline window
                 x = x - time,
                 # Y = Zscore average of all event traces
                 y = self.zscore([i/n_events for i in sum], base_mean, base_std),
@@ -669,9 +665,28 @@ class fiberObj:
                 text = 'average',
                 showlegend=True), row = 1, col = 2
                 )
+        # elif base_option[0] == 'Before Events':
+        #     pass
+            
+        # elif base_option[0] == 'End of Sample':
+            # pass
             
         fig.update_layout(title = 'Z-score of ' + beh + ' for ' + self.obj_name + ' in channel ' + channel)
         return fig
+        
+        
+    # Zscore calc helper
+    def zscore(self, ls, mean = None, std = None):
+        # Default Params, no arguments passed
+        if mean is None and std is None:
+            mean = np.nanmean(ls)
+            std = np.nanstd(ls)
+        # Calculates zscore per event in list  
+        new_ls = [(i - mean) / std for i in ls]
+        return new_ls
+        
+        
+        
         
         
          #return the pearsons correlation coefficient and r value between 2 full channels and plots the signals overlaid and their scatter plot
