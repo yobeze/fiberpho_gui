@@ -542,7 +542,7 @@ class fiberObj:
         """Takes a dataframe and creates plot of z-scores for
         each time a select behavior occurs with the avg
     z-score and SEM"""
-        print(type(base_option))
+        
         # Finds all times where behavior starts, turns into list
         BehTimes=list(self.fpho_data_df[(self.fpho_data_df[beh]=='S')]['time_green'])
         # Initialize figure
@@ -553,25 +553,61 @@ class fiberObj:
             go.Scatter(
             # X = all times
             # Y = all values at that channel
-            x=self.fpho_data_df['time_green'],
-            y=self.fpho_data_df[channel],
-            mode="lines",
-            line=go.scatter.Line(color="Green"),
+            x = self.fpho_data_df['time_green'],
+            y = self.fpho_data_df[channel],
+            mode = "lines",
+            line = go.scatter.Line(color="Green"),
             name = channel,
-            showlegend=False), row=1, col=1
+            showlegend = False), row = 1, col =1
         )
-        # Initializes sum of
-        sum=[]
-        # Initializ
-        zscoresum=[]
+
+        # Initializes ...
+        zscoresum = []
         # Initializes events counter at 0
         n_events = 0
-        start_event_time = 0
+        
+        if not base_option:
+            base_mean = None
+            base_std = None
+        
+        elif base_option[0] == 'Start of Sample':
+            # idx = np.where((start_event_time > baseline[0]) & (start_event_time < baseline[1]))
+            # Find baseline start/end index
+            # Start event time is the first occurrence of event, this option will be for a baseline at the beginning of the trace
+            base_start_idx = self.fpho_data_df['time_green'].searchsorted(baseline[0])
+            base_end_idx = self.fpho_data_df['time_green'].searchsorted(baseline[1])
+            # Calc mean and std for values within window
+            base_mean = np.nanmean(self.fpho_data_df.loc[base_start_idx:base_end_idx, channel]) 
+            base_std = np.nanstd(self.fpho_data_df.loc[base_start_idx:base_end_idx, channel])
+        
+        
+        elif base_option[0] == 'End of Sample':
+            # Indexes for finding baseline at end of sample
+            start = max(baseline)
+            end = min(baseline)
+            end_time = self.fpho_data_df['time_green'].iloc[-1]
+            print(end_time)
+            base_start_idx = self.fpho_data_df['time_green'].searchsorted(end_time - start)
+            base_end_idx = self.fpho_data_df['time_green'].searchsorted(end_time - end)
+            # Calculates mean and standard deviation
+            base_mean = np.nanmean(self.fpho_data_df.loc[base_start_idx:base_end_idx, channel])
+            base_std = np.nanstd(self.fpho_data_df.loc[base_start_idx:base_end_idx, channel])
+        
+        
+            
+        
         # Loops over all start times for this behavior
         # i = index, time = actual time
         for i, time in enumerate(BehTimes):
-            if i == 0:
-                start_event_time = time - time_before
+            # Calculates indices for baseline window before each event
+            if base_option and base_option[0] == 'Before Events':
+                start = max(baseline)
+                end = min(baseline)
+                base_start_idx = self.fpho_data_df['time_green'].searchsorted(time - start)
+                base_end_idx = self.fpho_data_df['time_green'].searchsorted(time - end)
+                base_mean = np.nanmean(self.fpho_data_df.loc[base_start_idx:base_end_idx, channel])
+                base_std = np.nanstd(self.fpho_data_df.loc[base_start_idx:base_end_idx, channel])
+
             # time - time_Before = start_time for this event trace, time is the actual event start, time before is secs input before event start
             # Finds time in our data that is closest to time - time_before
             # start_idx = index of that time
@@ -585,13 +621,14 @@ class fiberObj:
                 # Finds usable events
                 n_events = n_events + 1
                 # Tempy stores channel values for this event trace
-                tempy = self.fpho_data_df.loc[start_idx:end_idx, channel].values.tolist()
-                if len(sum)>1:
+                trace = self.fpho_data_df.loc[start_idx:end_idx, channel].values.tolist()
+                thisZscore=self.zscore(trace, base_mean, base_std)
+                if len(zscoresum)>1:
                     # Sums values at each index
-                    sum = [sum[i] + tempy[i] for i in range(len(tempy))]
+                    zscoresum = [zscoresum[i] + thisZscore[i] for i in range(len(trace))]
                 else:
                     # First value
-                    sum = tempy
+                    zscoresum = thisZscore
                 # x=self.fpho_data_df.loc[self.fpho_data_df['time_green'].searchsorted(time-time_before):self.fpho_data_df['time_green'].searchsorted(time+time_after),'time_green']
                 # Times for this event trace
                 x = self.fpho_data_df.loc[start_idx:end_idx,'time_green']
@@ -607,69 +644,32 @@ class fiberObj:
                     x = x - time,
                     # Y = Zscore of event trace
                     # y=ss.zscore(self.fpho_data_df.loc[start_idx:end_idx,channel]),
-                    y = self.zscore(tempy), 
+                    y = thisZscore, 
                     mode="lines",
                     line=dict(color=trace_color, width=2),
                     name = 'Event:' + str(i),
                     text = 'Event:' + str(i),
                     showlegend=True), row=1, col=2
                 )
+                
 
-        # If no baseline params passed
-        # if np.any((baseline == 0)):
-        if not base_option:
-            # Vertical line for event start 
-            fig.add_vline(x = 0, line_dash = "dot", row = 1, col = 2)
-            # Adds trace
-            fig.add_trace(
-                # Scatter plot
-                go.Scatter( 
-                # Times starting at user input start and end time
-                x = x - time,
-                # Y = Zscore average of all event traces
-                y = self.zscore([i / n_events for i in sum]),
-                mode = "lines",
-                line = dict(color = "Black", width = 5),
-                name ='average',
-                text = 'average',
-                showlegend = True), row = 1, col = 2
-                )
-        elif base_option[0] == 'Start of Sample':
-            # idx = np.where((start_event_time > baseline[0]) & (start_event_time < baseline[1]))
-            # Find baseline start/end index
-            # Start event time is the first occurrence of event, this option will be for a baseline at the beginning of the trace
-            base_start_idx = self.fpho_data_df['time_green'].searchsorted(start_event_time + baseline[0])
-            base_end_idx = self.fpho_data_df['time_green'].searchsorted(start_event_time + baseline[1])
-            # Calc mean and std for values within window
-            base_mean = np.nanmean(self.fpho_data_df.loc[base_start_idx:base_end_idx, channel]) 
-            base_std = np.nanstd(self.fpho_data_df.loc[base_start_idx:base_end_idx, channel])
-            # Ask kathleen about modifying graph
-            # window_vals = self.fpho_data_df.loc[base_start_idx:base_end_idx, channel].values.tolist()
-            # print(base_start_idx, base_end_idx, start_event_time)
+        fig.add_vline(x = 0, line_dash = "dot", row = 1, col = 2)
+        # Adds trace
+        fig.add_trace(
+            # Scatter plot
+            go.Scatter( 
+            # Times for baseline window
+            x = x - time,
+            # Y = Zscore average of all event traces
+            y = [i/n_events for i in zscoresum],
+            mode="lines",
+            line=dict(color="Black", width=5),
+            name ='average',
+            text = 'average',
+            showlegend=True), row = 1, col = 2
+            )
+
             
-            # x = self.fpho_data_df.loc[start_idx:end_idx,'time_green']
-            # Same scatter plot but adhering to baseline window
-            # Vertical line for event start 
-            fig.add_vline(x = 0, line_dash = "dot", row = 1, col = 2)
-            # Adds trace
-            fig.add_trace(
-                # Scatter plot
-                go.Scatter( 
-                # Times for baseline window
-                x = x - time,
-                # Y = Zscore average of all event traces
-                y = self.zscore([i/n_events for i in sum], base_mean, base_std),
-                mode="lines",
-                line=dict(color="Black", width=5),
-                name ='average',
-                text = 'average',
-                showlegend=True), row = 1, col = 2
-                )
-        # elif base_option[0] == 'Before Events':
-        #     pass
-            
-        # elif base_option[0] == 'End of Sample':
-            # pass
             
         fig.update_layout(title = 'Z-score of ' + beh + ' for ' + self.obj_name + ' in channel ' + channel)
         return fig
