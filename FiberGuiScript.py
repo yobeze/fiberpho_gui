@@ -134,6 +134,11 @@ def run_plot_raw_trace(event = None):
     # .value param to extract variables properly
     selected_objs = obj_selecta.value
     
+    if clear_raw.clicks > 0:
+        print(plot_raw_card.objects)
+        plot_raw_card.remove(plot_raw_card.objects)
+        clear_raw.clicks = 0
+        return
     #For len of selected objs, create and plot raw signal graph
     for objs in selected_objs:
         temp = fiber_objs[objs]
@@ -142,6 +147,8 @@ def run_plot_raw_trace(event = None):
         # plot_pane.trigger('object')
         plot_raw_card.append(plot_pane) #Add figure to template
 
+    
+    
         
 # Creates normalize signal pane
 def run_normalize_a_signal(event = None):
@@ -154,6 +161,7 @@ def run_normalize_a_signal(event = None):
         plot_pane.object = temp.normalize_a_signal(pick_signal.value, pick_reference.value) #Sets figure to plot variable
         # plot_pane.trigger('object')
         norm_sig_card.append(plot_pane) #Add figure to template
+        
         
         
 #Read behavior data
@@ -350,11 +358,13 @@ obj_selecta = pn.widgets.MultiSelect(name = 'Fiber Objects', value = [], options
 #Buttons
 plot_raw_btn = pn.widgets.Button(name = 'Plot Raw Signal', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
 plot_raw_btn.on_click(run_plot_raw_trace)
+clear_raw = pn.widgets.Button(name = 'U+02612', button_type = 'danger', width = 50, sizing_mode = 'fixed', align = 'end')
+clear_raw.on_click(run_plot_raw_trace)
 
 #Box
 plot_options = pn.Column(obj_selecta, plot_raw_btn)
 plot_raw_widget = pn.WidgetBox('# Options', plot_options)
-plot_raw_card = pn.Card(plot_raw_widget, title = 'Plot Raw Signal', background = 'WhiteSmoke', width = 600, collapsed = True)
+plot_raw_card = pn.Card(clear_raw, plot_raw_widget, title = 'Plot Raw Signal', background = 'WhiteSmoke', width = 600, collapsed = True)
 # ----------------------------------------------------- # 
 #Normalize signal to reference Widget
 #Input vairables
