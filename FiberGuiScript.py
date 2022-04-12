@@ -130,15 +130,10 @@ def run_save_fiberobj(event = None):
             
 
 # Creates raw plot pane
-def run_plot_raw_trace(event = None):
+def run_plot_raw_trace(event):
     # .value param to extract variables properly
     selected_objs = obj_selecta.value
     
-    if clear_raw.clicks > 0:
-        print(plot_raw_card.objects)
-        plot_raw_card.remove(plot_raw_card.objects)
-        clear_raw.clicks = 0
-        return
     #For len of selected objs, create and plot raw signal graph
     for objs in selected_objs:
         temp = fiber_objs[objs]
@@ -147,7 +142,6 @@ def run_plot_raw_trace(event = None):
         # plot_pane.trigger('object')
         plot_raw_card.append(plot_pane) #Add figure to template
 
-    
     
         
 # Creates normalize signal pane
@@ -289,7 +283,47 @@ def update_selecta_options(event = None):
     beh_corr_behavior_selecta.options = list(available_behaviors)
     
 
-
+# Clear plots by card function
+def clear_plots(event):
+    if clear_raw.clicks:
+        for i in range(len(plot_raw_card.objects)):
+            if isinstance(plot_raw_card.objects[i], pn.pane.plotly.Plotly):
+                plot_raw_card.remove(plot_raw_card.objects[i])
+                return
+    
+    if clear_norm.clicks:
+        for i in range(len(norm_sig_card.objects)):
+            if isinstance(norm_sig_card.objects[i], pn.pane.plotly.Plotly):
+                norm_sig_card.remove(norm_sig_card.objects[i])
+                return
+    
+    if clear_beh.clicks:
+        for i in range(len(plot_beh_card.objects)):
+            if isinstance(plot_beh_card.objects[i], pn.pane.plotly.Plotly):
+                plot_beh_card.remove(plot_beh_card.objects[i])
+                return
+    
+    if clear_zscore.clicks:
+        for i in range(len(zscore_card.objects)):
+            if isinstance(zscore_card.objects[i], pn.pane.plotly.Plotly):
+                zscore_card.remove(zscore_card.objects[i])
+                return
+    
+    if clear_pears.clicks:
+        for i in range(len(pearsons_card.objects)):
+            if isinstance(pearsons_card.objects[i], pn.pane.plotly.Plotly):
+                pearsons_card.remove(pearsons_card.objects[i])
+                return
+    
+    if clear_beh_corr.clicks:
+        for i in range(len(beh_corr_card.objects)):
+            if isinstance(beh_corr_card.objects[i], pn.pane.plotly.Plotly):
+                beh_corr_card.remove(beh_corr_card.objects[i])
+                return
+            
+            
+            
+            
 # In[3]:
 #Template and widget declarations
 ACCENT_COLOR = "#0072B5"
@@ -358,13 +392,18 @@ obj_selecta = pn.widgets.MultiSelect(name = 'Fiber Objects', value = [], options
 #Buttons
 plot_raw_btn = pn.widgets.Button(name = 'Plot Raw Signal', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
 plot_raw_btn.on_click(run_plot_raw_trace)
-clear_raw = pn.widgets.Button(name = 'U+02612', button_type = 'danger', width = 50, sizing_mode = 'fixed', align = 'end')
-clear_raw.on_click(run_plot_raw_trace)
+clear_raw = pn.widgets.Button(name = 'Clear Plots \u274c', button_type = 'danger', width = 30, sizing_mode = 'fixed', align = 'start')
+clear_raw.on_click(clear_plots)
+
+raw_info = pn.pane.Markdown("""
+                                Plots the raw signal outputs of fiber objects.
+                            """, width = 200)
 
 #Box
 plot_options = pn.Column(obj_selecta, plot_raw_btn)
-plot_raw_widget = pn.WidgetBox('# Options', plot_options)
+plot_raw_widget = pn.WidgetBox(raw_info, plot_options)
 plot_raw_card = pn.Card(clear_raw, plot_raw_widget, title = 'Plot Raw Signal', background = 'WhiteSmoke', width = 600, collapsed = True)
+
 # ----------------------------------------------------- # 
 #Normalize signal to reference Widget
 #Input vairables
@@ -372,16 +411,23 @@ plot_raw_card = pn.Card(clear_raw, plot_raw_widget, title = 'Plot Raw Signal', b
 norm_selecta = pn.widgets.MultiSelect(name = 'Fiber Objects', value = [], options = [], )
 pick_signal = pn.widgets.Select(name = 'Signal', options = [])
 pick_reference = pn.widgets.Select(name = 'Reference', options = [])
+
 #Buttons
 norm_sig_btn = pn.widgets.Button(name = 'Normalize Signal', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
 norm_sig_btn.on_click(run_normalize_a_signal)
 update_norm_options_btn = pn.widgets.Button(name = 'Update Signal/Reference Options', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
 update_norm_options_btn.on_click(update_selecta_options)
+clear_norm = pn.widgets.Button(name = 'Clear Plots \u274c', button_type = 'danger', width = 30, sizing_mode = 'fixed', align = 'start')
+clear_norm.on_click(clear_plots)
 
+norm_info = pn.pane.Markdown("""
+                                    Normalizes the signal and reference trace to a biexponential, linearly fits the normalized reference to the normalized signal. <br>
+                                    Stores all fitted traces in the dataframe and plots them for examination.
+                                    """, width = 200)
 #Box
 norm_options = pn.Column(norm_selecta, update_norm_options_btn, pick_signal, pick_reference, norm_sig_btn)
-norm_sig_widget = pn.WidgetBox(norm_options)
-norm_sig_card = pn.Card(norm_sig_widget, title = 'Normalize to a reference', background = 'WhiteSmoke', width = 600, collapsed= True)
+norm_sig_widget = pn.WidgetBox('# Normalize Signal', norm_info, norm_options)
+norm_sig_card = pn.Card(clear_norm, norm_sig_widget, title = 'Normalize to a reference', background = 'WhiteSmoke', width = 600, collapsed = True)
 
 
 # ----------------------------------------------------- # 
@@ -396,9 +442,13 @@ behav_selecta = pn.widgets.Select(name = 'Fiber Objects', value = [], options = 
 upload_beh_btn = pn.widgets.Button(name = 'Read Behavior Data', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
 upload_beh_btn.on_click(run_import_behavior_data) #Button action
 
+upload_beh_info = pn.pane.Markdown("""
+                                        Imports user uploaded behavior data and reads dataframe to update and include subject, behavior, and status columns to the dataframe.
+                                    """, width = 200)
+
 #Box
 behav_options = pn.Column(behav_selecta, behav_input, upload_beh_btn)
-upload_beh_widget = pn.WidgetBox('# Import Behavior file', behav_options)
+upload_beh_widget = pn.WidgetBox('# Import Behavior file', upload_beh_info, behav_options)
 upload_beh_card = pn.Card(upload_beh_widget, title = 'Import Behavior', background = 'WhiteSmoke', width = 600, collapsed = True)
 
 # ----------------------------------------------------- # 
@@ -416,11 +466,15 @@ plot_beh_btn = pn.widgets.Button(name = 'Plot Behavior', button_type = 'primary'
 plot_beh_btn.on_click(run_plot_behavior) #Button action
 update_plot_options_btn = pn.widgets.Button(name = 'Update Options', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
 update_plot_options_btn.on_click(update_selecta_options) #Button action
-
+clear_beh = pn.widgets.Button(name = 'Clear Plots \u274c', button_type = 'danger', width = 30, sizing_mode = 'fixed', align = 'start')
+clear_beh.on_click(clear_plots)
+beh_info = pn.pane.Markdown("""
+                                Creates and displays the different channels from behavior data.
+                            """, width = 200)
 #Box
 plot_beh_options = pn.Column(plot_beh_selecta, update_plot_options_btn, channel_selecta, behavior_selecta, plot_beh_btn)
-plot_beh_widget = pn.WidgetBox('# Plot Behavior', plot_beh_options)
-plot_beh_card = pn.Card(plot_beh_widget, title = 'Plot Behavior', background = 'WhiteSmoke', width = 600, collapsed = True)
+plot_beh_widget = pn.WidgetBox('# Plot Behavior', beh_info, plot_beh_options)
+plot_beh_card = pn.Card(clear_beh, plot_beh_widget, title = 'Plot Behavior', background = 'WhiteSmoke', width = 600, collapsed = True)
 
 # ----------------------------------------------------- # 
 # ----------------------------------------------------- # 
@@ -437,9 +491,15 @@ baseline_end = pn.widgets.LiteralInput(name = 'Baseline Window End Time (s)', wi
 z_score_note = pn.pane.Markdown("""
                                    ***Note :***<br>
                                    - Baseline Window Parameters should be kept 0 unless you are using baseline<br> 
-                                   z-score computation method. The parameters are in seconds. <br>
+                                   z-score computation method. <br>
+                                   - The parameters are in seconds. <br>
                                    - Please check where you would like your baseline window, **ONLY check one box**. <br>
                                    """, width = 200)
+zscore_info = pn.pane.Markdown("""
+                                    Takes a dataframe and creates a plot of z-scores for
+                                    each time a select behavior occurs with the average
+                                    z-score and SEM.
+                                """, width = 200)
 
 #Buttons
 zscore_btn = pn.widgets.Button(name = 'Zscore of Behavior', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
@@ -449,13 +509,15 @@ options_btn.on_click(update_selecta_options) #Button action
 baseline_selecta = pn.widgets.CheckBoxGroup(
     name = 'Baseline Options', value = [], options = ['Start of Sample', 'Before Events', 'End of Sample'],
     inline = True)
+clear_zscore = pn.widgets.Button(name = 'Clear Plots \u274c', button_type = 'danger', width = 30, sizing_mode = 'fixed', align = 'start')
+clear_zscore.on_click(clear_plots)
 
 #Box
 zscore_options = pn.Column(zscore_selecta, options_btn, zchannel_selecta, zbehs_selecta, time_before, time_after, zscore_btn)
 baseline_options = pn.Column(z_score_note, baseline_start, baseline_end, baseline_selecta)
 tabs = pn.Tabs(('Z-Score', zscore_options), ('Options', baseline_options))
-zscore_widget = pn.WidgetBox('# Zscore Plot', tabs)
-zscore_card = pn.Card(zscore_widget, title = 'Zscore Plot', background = 'WhiteSmoke', width = 600, collapsed = True)
+zscore_widget = pn.WidgetBox('# Zscore Plot', zscore_info, tabs)
+zscore_card = pn.Card(clear_zscore, zscore_widget, title = 'Zscore Plot', background = 'WhiteSmoke', width = 600, collapsed = True)
 
 # ----------------------------------------------------- # 
 # ----------------------------------------------------- # 
@@ -471,11 +533,17 @@ pearsons_btn = pn.widgets.Button(name = 'Calculate Pearsons Correlation', button
 pearsons_btn.on_click(run_trial_pearsons) #Button action
 pearson_options_btn = pn.widgets.Button(name = 'Update Options', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
 pearson_options_btn.on_click(update_selecta_options) #Button action
+clear_pears = pn.widgets.Button(name = 'Clear Plots \u274c', button_type = 'danger', width = 30, sizing_mode = 'fixed', align = 'start')
+clear_pears.on_click(clear_plots)
+
+pears_info = pn.pane.Markdown("""
+                                    Takes in user chosen objects and channels then returns the Pearson's correlation coefficient and plots the signals.
+                                """, width = 200)
 
 #Box
 pearson_options = pn.Column(pearsons_selecta1, pearsons_selecta2, pearson_options_btn, pearsons_channel_selecta, pearsons_btn)
-pearson_widget = pn.WidgetBox('# Pearons Correlation Plot', pearson_options)
-pearsons_card = pn.Card(pearson_widget, title = 'Pearsons Correlation Coefficient', background = 'WhiteSmoke', width = 600 , collapsed = True)
+pearson_widget = pn.WidgetBox('# Pearons Correlation Plot', pears_info, pearson_options)
+pearsons_card = pn.Card(clear_pears, pearson_widget, title = 'Pearsons Correlation Coefficient', background = 'WhiteSmoke', width = 600 , collapsed = True)
 
 
 # ----------------------------------------------------- # 
@@ -493,11 +561,17 @@ beh_corr_btn = pn.widgets.Button(name = 'Calculate Pearsons Correlation', button
 beh_corr_btn.on_click(run_beh_specific_pearsons) #Button action
 beh_corr_options_btn = pn.widgets.Button(name = 'Update Options', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
 beh_corr_options_btn.on_click(update_selecta_options) #Button action
+clear_beh_corr = pn.widgets.Button(name = 'Clear Plots \u274c', button_type = 'danger', width = 30, sizing_mode = 'fixed', align = 'start')
+clear_beh_corr.on_click(clear_plots)
+
+beh_corr_info = pn.pane.Markdown("""
+                                    Takes in user chosen objects, channels and behaviors to calculate the behavior specific Pearson’s correlation and plot the signals.
+                                """, width = 200)
 
 #Box
 beh_corr_options = pn.Column(beh_corr_selecta1, beh_corr_selecta2, beh_corr_options_btn, beh_corr_channel_selecta, beh_corr_behavior_selecta, beh_corr_btn)
-beh_corr_widget = pn.WidgetBox('# Behavior Specific Correlation Plot', beh_corr_options)
-beh_corr_card = pn.Card(beh_corr_widget, title = 'Behavior Specific Pearsons Correlation', background = 'WhiteSmoke', width = 600, collapsed = True)
+beh_corr_widget = pn.WidgetBox('# Behavior Specific Correlation Plot', beh_corr_info, beh_corr_options)
+beh_corr_card = pn.Card(clear_beh_corr, beh_corr_widget, title = 'Behavior Specific Pearsons Correlation', background = 'WhiteSmoke', width = 600, collapsed = True)
 
 
 # ----------------------------------------------------- # 
