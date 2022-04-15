@@ -31,6 +31,7 @@ class fiberObj:
         self.exp_date = exp_date
         self.exp_start_time = exp_start_time
         self.file_name = filename
+        self.beh_file = None
         self.beh_filename = None
         self.behaviors = set()
         self.channels = set()
@@ -407,7 +408,7 @@ class fiberObj:
     # Behavior Functions
     # ----------------------------------------------------- # 
 
-    def import_behavior_data(self, BORIS_filename):
+    def import_behavior_data(self, BORIS_filename, filename):
         """Takes a file name, returns a dataframe of parsed data
 
             Parameters
@@ -433,12 +434,12 @@ class fiberObj:
             print("Could not access file: " + BORIS_filename)
             sys.exit(2)
 
-        UniqueBehaviors=BORISData['Behavior'].unique()
+        UniqueBehaviors = BORISData['Behavior'].unique()
         for beh in UniqueBehaviors:
             self.behaviors.add(beh)
             IdxOfBeh = [i for i in range(len(BORISData['Behavior'])) if BORISData.loc[i, 'Behavior'] == beh]                    
-            j=0
-            self.fpho_data_df[beh]=' '
+            j = 0
+            self.fpho_data_df[beh] = ' '
             while j < len(IdxOfBeh):
                 if BORISData.loc[(IdxOfBeh[j]), 'Status']=='POINT': 
                     pointIdx=self.fpho_data_df['time_green'].searchsorted(BORISData.loc[IdxOfBeh[j],'Time'])
@@ -455,7 +456,8 @@ class fiberObj:
                     print("\nStart and stops for state behavior:" + beh + " are not paired correctly.\n")
                     sys.exit()
 
-        self.beh_filename = BORIS_filename
+        self.beh_file = BORIS_filename
+        self.beh_filename = filename
         return
     
     
@@ -475,10 +477,10 @@ class fiberObj:
                 )
             
             colors = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52']
-            j=0
+            j = 0
             behaviorname = ""
             for j, beh in enumerate(behaviors):
-                behaviorname= behaviorname + " " + beh
+                behaviorname = behaviorname + " " + beh
                 temp_beh_string = ''.join([key for key in self.fpho_data_df[beh]])
                 pattern = re.compile(r'S[O]+E')
                 bouts = pattern.finditer(temp_beh_string)
