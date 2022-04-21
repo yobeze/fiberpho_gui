@@ -18,6 +18,46 @@ import re
 
 pn.extension('plotly')
 
+
+def lick_to_boris(lick_file):
+
+    trimmed = lick_file[lick_file['Licks'] != 0 ]
+
+    starts = [(trimmed.iloc[0]['Time'] - lick_file.iloc[0]['Time'])/1000]
+    stops = []
+    diffs = np.diff(trimmed.index)
+
+    for i,v in enumerate(diffs):
+        if v > 1:
+            stops.append((trimmed.iloc[i]['Time']-lick_file.iloc[0]['Time'])/1000)
+            if i + 1 < len(diffs):
+                starts.append((trimmed.iloc[i+1]['Time']-lick_file.iloc[0]['Time'])/1000)
+    stops.append((trimmed.iloc[-1]['Time']-lick_file.iloc[0]['Time'])/1000)
+
+    Time = starts + stops
+    Time.sort()
+
+    Status = ['START']*len(Time)
+    half = len(Time)/2
+    Status[1::2] = ['STOP']*int(half)
+    Behavior = ['Lick']*len(Time)
+
+
+    Time = [0]*14 + ['Time'] + Time
+    Media = ['n/a']*len(Time)
+    Total = ['n/a']*len(Time)
+    FPS = ['n/a']*len(Time)
+    Subject = ['n/a']*len(Time)
+    Behavior = [0]*14 + ['Behavior'] + Behavior
+    BehCat = ['n/a']*len(Time)
+    Comment = ['n/a']*len(Time)
+    Status = [0]*14 + ['Status'] + Status
+
+    boris = pd.DataFrame([Time, Media, Total, FPS, Subject, Behavior, BehCat, Comment, Status])
+    boris = boris.transpose()
+    return boris
+
+
 class fiberObj:
 #figure out if list/dict is better than dataframe
     start_idx = 301
@@ -461,7 +501,6 @@ class fiberObj:
         return
     
     
-        
     def plot_behavior(self, behaviors, channels):
         # channels =[channel_dict[i] for i in channels_inputed]
         fig = make_subplots(rows = len(channels), cols = 1, subplot_titles = [channel for channel in channels], shared_xaxes = True)

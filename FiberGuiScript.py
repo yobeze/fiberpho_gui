@@ -327,7 +327,32 @@ def clear_plots(event):
                 beh_corr_card.remove(beh_corr_card.objects[i])
                 return
             
-            
+# Convert lickometer data to boris csv
+def run_convert_lick(event):
+    file = lick_input.value
+    name = lick_input.filename
+    if file:
+        try:
+            string_io = io.StringIO(file.decode("utf8"))
+            lick_file = pd.read_csv(string_io, delimiter = '\s+', names = ['Time', 'Licks']) #Read into dataframe
+        except FileNotFoundError:
+            print("Could not find file: " + lick_input.filename)
+            sys.exit(5)
+        except PermissionError:
+            print("Could not access file: " + lick_input.filename)
+            sys.exit(6)
+    if not lick_file.empty:
+        convert = fc.lick_to_boris(lick_file)
+        outputname = lick_input.filename[0:-4] + '_reformatted' + '.csv'
+        sio = io.StringIO()
+        convert.to_csv(sio, index = False)
+        sio.seek(0)
+        out_file = pn.widgets.FileDownload(sio, embed = True, filename = outputname, button_type = 'success', label = 'Download Formatted Lickometer Data', width = 400, sizing_mode = 'fixed')
+        beh_tabs[1].append(out_file)
+    else:
+        print('Error reading file')
+
+
             
             
 # In[3]:
@@ -442,20 +467,33 @@ norm_sig_card = pn.Card(clear_norm, norm_sig_widget, title = 'Normalize to a ref
 #Input variables
 behav_input = pn.widgets.FileInput(name = 'Upload Behavior Data', accept = '.csv') #File input parameter
 behav_selecta = pn.widgets.Select(name = 'Fiber Objects', value = [], options = [], )
+lick_input = pn.widgets.FileInput(name = 'Upload Lickometer Data', accept = '.csv')
 
 
 #Buttons
 upload_beh_btn = pn.widgets.Button(name = 'Read Behavior Data', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
 upload_beh_btn.on_click(run_import_behavior_data) #Button action
 
+upload_lick_btn = pn.widgets.Button(name = 'Upload', button_type = 'primary', width = 100, sizing_mode = 'fixed')
+upload_lick_btn.on_click(run_convert_lick)
+
 upload_beh_info = pn.pane.Markdown("""
                                         Imports user uploaded behavior data and reads dataframe to update and include subject, behavior, and status columns to the dataframe.
                                     """, width = 200)
 
+convert_info = pn.pane.Markdown(""" - Upload lickometer data to be converted to behavior file formatting <br>
+                                    - Returns downloadable csv after conversion has been completed
+                                """, width = 200)
+
+
 #Box
-behav_options = pn.Column(behav_selecta, behav_input, upload_beh_btn)
-upload_beh_widget = pn.WidgetBox('# Import Behavior file', upload_beh_info, behav_options)
+behav_options = pn.Column(upload_beh_info, behav_selecta, behav_input, upload_beh_btn)
+lick_options = pn.Column(convert_info, lick_input, upload_lick_btn)
+beh_tabs = pn.Tabs(('Behavior Import', behav_options), ('Lick 2 Boris', lick_options))
+
+upload_beh_widget = pn.WidgetBox('# Import Behavior file', beh_tabs)
 upload_beh_card = pn.Card(upload_beh_widget, title = 'Import Behavior', background = 'WhiteSmoke', width = 600, collapsed = True)
+
 
 # ----------------------------------------------------- # 
 
@@ -474,6 +512,7 @@ update_plot_options_btn = pn.widgets.Button(name = 'Update Options', button_type
 update_plot_options_btn.on_click(update_selecta_options) #Button action
 clear_beh = pn.widgets.Button(name = 'Clear Plots \u274c', button_type = 'danger', width = 30, sizing_mode = 'fixed', align = 'start')
 clear_beh.on_click(clear_plots)
+
 beh_info = pn.pane.Markdown("""
                                 Creates and displays the different channels from behavior data.
                             """, width = 200)
@@ -512,6 +551,7 @@ zscore_btn = pn.widgets.Button(name = 'Zscore of Behavior', button_type = 'prima
 zscore_btn.on_click(run_plot_zscore) #Button action
 options_btn = pn.widgets.Button(name = 'Update Options', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
 options_btn.on_click(update_selecta_options) #Button action
+
 baseline_selecta = pn.widgets.CheckBoxGroup(
     name = 'Baseline Options', value = [], options = ['Start of Sample', 'Before Events', 'End of Sample'],
     inline = True)
