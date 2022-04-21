@@ -433,7 +433,7 @@ raw_info = pn.pane.Markdown("""
 #Box
 plot_options = pn.Column(obj_selecta, plot_raw_btn)
 plot_raw_widget = pn.WidgetBox(raw_info, plot_options)
-plot_raw_card = pn.Card(clear_raw, plot_raw_widget, title = 'Plot Raw Signal', background = 'WhiteSmoke', width = 600, collapsed = True)
+plot_raw_card = pn.Card(plot_raw_widget, clear_raw, title = 'Plot Raw Signal', background = 'WhiteSmoke', width = 600, collapsed = True)
 
 # ----------------------------------------------------- # 
 #Normalize signal to reference Widget
@@ -458,7 +458,7 @@ norm_info = pn.pane.Markdown("""
 #Box
 norm_options = pn.Column(norm_selecta, update_norm_options_btn, pick_signal, pick_reference, norm_sig_btn)
 norm_sig_widget = pn.WidgetBox('# Normalize Signal', norm_info, norm_options)
-norm_sig_card = pn.Card(clear_norm, norm_sig_widget, title = 'Normalize to a reference', background = 'WhiteSmoke', width = 600, collapsed = True)
+norm_sig_card = pn.Card(norm_sig_widget, clear_norm, title = 'Normalize to a reference', background = 'WhiteSmoke', width = 600, collapsed = True)
 
 
 # ----------------------------------------------------- # 
@@ -519,7 +519,7 @@ beh_info = pn.pane.Markdown("""
 #Box
 plot_beh_options = pn.Column(plot_beh_selecta, update_plot_options_btn, channel_selecta, behavior_selecta, plot_beh_btn)
 plot_beh_widget = pn.WidgetBox('# Plot Behavior', beh_info, plot_beh_options)
-plot_beh_card = pn.Card(clear_beh, plot_beh_widget, title = 'Plot Behavior', background = 'WhiteSmoke', width = 600, collapsed = True)
+plot_beh_card = pn.Card(plot_beh_widget, clear_beh, title = 'Plot Behavior', background = 'WhiteSmoke', width = 600, collapsed = True)
 
 # ----------------------------------------------------- # 
 # ----------------------------------------------------- # 
@@ -563,7 +563,7 @@ zscore_options = pn.Column(zscore_selecta, options_btn, zchannel_selecta, zbehs_
 baseline_options = pn.Column(z_score_note, baseline_start, baseline_end, baseline_selecta)
 tabs = pn.Tabs(('Z-Score', zscore_options), ('Options', baseline_options))
 zscore_widget = pn.WidgetBox('# Zscore Plot', zscore_info, tabs)
-zscore_card = pn.Card(clear_zscore, zscore_widget, title = 'Zscore Plot', background = 'WhiteSmoke', width = 600, collapsed = True)
+zscore_card = pn.Card(zscore_widget, clear_zscore, title = 'Zscore Plot', background = 'WhiteSmoke', width = 600, collapsed = True)
 
 # ----------------------------------------------------- # 
 # ----------------------------------------------------- # 
@@ -589,7 +589,7 @@ pears_info = pn.pane.Markdown("""
 #Box
 pearson_options = pn.Column(pearsons_selecta1, pearsons_selecta2, pearson_options_btn, pearsons_channel_selecta, pearsons_btn)
 pearson_widget = pn.WidgetBox('# Pearons Correlation Plot', pears_info, pearson_options)
-pearsons_card = pn.Card(clear_pears, pearson_widget, title = 'Pearsons Correlation Coefficient', background = 'WhiteSmoke', width = 600 , collapsed = True)
+pearsons_card = pn.Card(pearson_widget, clear_pears, title = 'Pearsons Correlation Coefficient', background = 'WhiteSmoke', width = 600 , collapsed = True)
 
 
 # ----------------------------------------------------- # 
@@ -617,7 +617,7 @@ beh_corr_info = pn.pane.Markdown("""
 #Box
 beh_corr_options = pn.Column(beh_corr_selecta1, beh_corr_selecta2, beh_corr_options_btn, beh_corr_channel_selecta, beh_corr_behavior_selecta, beh_corr_btn)
 beh_corr_widget = pn.WidgetBox('# Behavior Specific Correlation Plot', beh_corr_info, beh_corr_options)
-beh_corr_card = pn.Card(clear_beh_corr, beh_corr_widget, title = 'Behavior Specific Pearsons Correlation', background = 'WhiteSmoke', width = 600, collapsed = True)
+beh_corr_card = pn.Card(beh_corr_widget, clear_beh_corr, title = 'Behavior Specific Pearsons Correlation', background = 'WhiteSmoke', width = 600, collapsed = True)
 
 
 # ----------------------------------------------------- # 
