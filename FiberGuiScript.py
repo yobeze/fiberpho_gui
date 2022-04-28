@@ -66,8 +66,10 @@ def run_init_fiberobj(event = None):
         sys.exit(4)
     else:
         #Add to dict if object name does not already exist
-        if input_params[0] not in fiber_objs:
+        if input_params[0] not in fiber_objs and input_params[5] not in fiber_data.values:
             #Creates new object
+            print("HELLO")
+            print(fiber_data)
             new_obj = fc.fiberObj(df, input_params[0], input_params[1], input_params[2], input_params[3], input_params[4], input_params[5])
             #Adds to dict
             fiber_objs[input_params[0]] = new_obj
@@ -88,7 +90,7 @@ def run_init_fiberobj(event = None):
             save_obj_selecta.options = [*existing_objs]
             info_selecta.options = [*existing_objs]
         else:
-            print('This object name already exists')
+            print('This object name and/or FiberPho file already exists')
 
 
 # Upload pickled object files
