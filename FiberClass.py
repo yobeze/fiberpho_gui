@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import scipy.stats as ss
 import re
 
-pn.extension('plotly')
+pn.extension('terminal')
 
 
 def lick_to_boris(lick_file):
@@ -732,59 +732,63 @@ class fiberObj:
         
          #return the pearsons correlation coefficient and r value between 2 full channels and plots the signals overlaid and their scatter plot
     def within_trial_pearsons(self, obj2, channel):
-        if not channel in self.full_corr_results.columns:
-            self.full_corr_results.loc[:, channel] = [(float("NaN"), float("NaN")) for i in range(len(self.full_corr_results.index))]
-        if not channel in obj2.full_corr_results.columns:
-            obj2.full_corr_results.loc[:, channel] = [(float("NaN"), float("NaN")) for i in range(len(obj2.full_corr_results.index))]
-        if not obj2.obj_name in self.full_corr_results:
-            self.full_corr_results.loc[obj2.obj_name, :] = [(float("NaN"), float("NaN")) for i in range(len(obj2.full_corr_results.columns))]
-        if not self.obj_name in obj2.full_corr_results:
-            obj2.full_corr_results.loc[self.obj_name, :] = [(float("NaN"), float("NaN")) for i in range(len(self.full_corr_results.columns))]
-        
-        sig1 = self.fpho_data_df[channel]
-        sig2 = obj2.fpho_data_df[channel]
-        time = self.fpho_data_df['time_green']
-    
-        #sig1smooth = ss.zscore(uniform_filter1d(sig1, size=i))
-        #sig2smooth = ss.zscore(uniform_filter1d(sig2, size=i))
-        fig = make_subplots(rows = 1, cols = 2)
-        #creates a scatter plot
-        fig.add_trace(
-            go.Scattergl(
-            x = sig1,
-            y = sig2,
-            mode = "markers",
-            name ='correlation',
-            showlegend = False), row = 1, col = 2
-        )
-        #plots sig1
-        fig.add_trace(
-            go.Scattergl(
-            x = time,
-            y = sig1,
-            mode = "lines",
-            name = 'sig1',
-            showlegend = False), row = 1, col = 1
-        )
-        #plots sig2
-        fig.add_trace(
-            go.Scattergl(
-            x = time,
-            y = sig2,
-            mode = "lines",
-            name = "sig2",
-            showlegend = False), row = 1, col = 1
-        )
+        try: 
+            if not channel in self.full_corr_results.columns:
+                self.full_corr_results.loc[:, channel] = [(float("NaN"), float("NaN")) for i in range(len(self.full_corr_results.index))]
+            if not channel in obj2.full_corr_results.columns:
+                obj2.full_corr_results.loc[:, channel] = [(float("NaN"), float("NaN")) for i in range(len(obj2.full_corr_results.index))]
+            if not obj2.obj_name in self.full_corr_results:
+                self.full_corr_results.loc[obj2.obj_name, :] = [(float("NaN"), float("NaN")) for i in range(len(obj2.full_corr_results.columns))]
+            if not self.obj_name in obj2.full_corr_results:
+                obj2.full_corr_results.loc[self.obj_name, :] = [(float("NaN"), float("NaN")) for i in range(len(self.full_corr_results.columns))]
 
-        #calculates the pearsons R  
-        [r, p] = ss.pearsonr(sig1, sig2)
-        self.full_corr_results[obj2.obj_name, channel] = (r, p)
-        obj2.full_corr_results[self.obj_name, channel] = (r, p)
+            sig1 = self.fpho_data_df[channel]
+            sig2 = obj2.fpho_data_df[channel]
+            time = self.fpho_data_df['time_green']
+
+            #sig1smooth = ss.zscore(uniform_filter1d(sig1, size=i))
+            #sig2smooth = ss.zscore(uniform_filter1d(sig2, size=i))
+            fig = make_subplots(rows = 1, cols = 2)
+            #creates a scatter plot
+            fig.add_trace(
+                go.Scattergl(
+                x = sig1,
+                y = sig2,
+                mode = "markers",
+                name ='correlation',
+                showlegend = False), row = 1, col = 2
+            )
+            #plots sig1
+            fig.add_trace(
+                go.Scattergl(
+                x = time,
+                y = sig1,
+                mode = "lines",
+                name = 'sig1',
+                showlegend = False), row = 1, col = 1
+            )
+            #plots sig2
+            fig.add_trace(
+                go.Scattergl(
+                x = time,
+                y = sig2,
+                mode = "lines",
+                name = "sig2",
+                showlegend = False), row = 1, col = 1
+            )
+
+            #calculates the pearsons R  
+            [r, p] = ss.pearsonr(sig1, sig2)
+            self.full_corr_results[obj2.obj_name, channel] = (r, p)
+            obj2.full_corr_results[self.obj_name, channel] = (r, p)
+
+            fig.update_layout(
+            title = 'Correlation between ' + self.obj_name + ' and ' + obj2.obj_name + ' is, ' + str(r) + ' p = ' + str(p)
+            )
+            return fig
         
-        fig.update_layout(
-        title = 'Correlation between ' + self.obj_name + ' and ' + obj2.obj_name + ' is, ' + str(r) + ' p = ' + str(p)
-        )
-        return fig
+        except:
+            log_msg = 
 
     
     #return the pearsons 
