@@ -356,7 +356,7 @@ def run_convert_lick(event):
 
         
         
-def error_logger(event):
+# def error_logger(event):
     # might have to add pn.extension('terminal')
     # pn.config.console_output = 'disable'
     # debug = pn.widgets.Debugger(name = "Error Logger")
