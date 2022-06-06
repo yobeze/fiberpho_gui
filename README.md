@@ -33,8 +33,7 @@
             - It should be in the *gui_env* directory: 
             - Mac/Unix: `.../env/bin/python`
             - Windows: `...\env\Scripts\python.exe`
-        7. Navigate *(cd)* to the Fiber-Pho-Main folder in the terminal and execute the following command:
-        `pip3 install -r requirements.txt`
+        7. Execute the following command: `pip3 install -r requirements.txt`
             > Execute "pip list" to ensure all necessary dependencies are installed.
     - Using Anaconda:
         - TODO
