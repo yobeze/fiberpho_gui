@@ -14,7 +14,6 @@
 
 2. Create Virtual Environment
 > We will be creating a virtual environment to ensure that there are no issues with any currently installed python packages/modules. It may seem tedious/long but it is for precautionary purposes. You may install the GUI using either Anaconda or PIP/PyPI, the instructions for both are below:
-
     - Using PIP/PyPI
         1. Open a new terminal window and confirm that you are in your Home directory/folder
             - Mac/Unix: Type "cd ~"
@@ -37,9 +36,6 @@
         7. Navigate *(cd)* to the Fiber-Pho-Main folder in the terminal and execute the following command:
         `pip3 install -r requirements.txt`
             > Execute "pip list" to ensure all necessary dependencies are installed.
-
-    - Using Anaconda
-        1. TODO
 
 **Fiber Photometry GUI should now be installed and ready to use**
 
