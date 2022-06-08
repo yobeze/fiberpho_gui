@@ -353,8 +353,14 @@ def run_convert_lick(event):
     else:
         print('Error reading file')
 
-
-            
+        
+        
+# def error_logger(event):
+    # might have to add pn.extension('terminal')
+    # pn.config.console_output = 'disable'
+    # debug = pn.widgets.Debugger(name = "Error Logger")
+    
+    
             
 # In[3]:
 # Accent Colors
