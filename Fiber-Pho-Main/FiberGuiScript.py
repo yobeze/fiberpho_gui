@@ -19,7 +19,6 @@ from scipy.optimize import curve_fit
 from plotly.subplots import make_subplots
 from pathlib import Path
 import pickle
-from tornado.ioloop import IOLoop
 import FiberClass as fc
 
 
@@ -358,42 +357,39 @@ def run_convert_lick(event):
             
             
 # In[3]:
-#Template and widget declarations
-ACCENT_COLOR = "#0072B5"
-template = pn.template.MaterialTemplate(site = 'Donaldson Lab: Fiber Photometry', title = 'FiberPho GUI',
-                                       sidebar = ["**Upload CSV** and set **Input Parameters** for your fiber object here"],
-                                        main = [], accent_base_color = ACCENT_COLOR, header_background = ACCENT_COLOR
-                                       )
+# Accent Colors
+ACCENT_COLOR_HEAD = "#128CB6"
+ACCENT_COLOR_BG = "#D9F3F3"
 
-#Dict of objects
+# Dict of objects
 # ----------------------------------------------------- # 
-#Init fiberobj Widget
+# Init fiberobj Widget
 
 #Input variables
-input_1 = pn.widgets.TextInput(name = 'Object Name', width = 90, placeholder = 'String')
-input_2 = pn.widgets.IntInput(name = 'Fiber Number', width = 90, placeholder = 'Int')
-input_3 = pn.widgets.IntInput(name = 'Animal Number', width = 90, placeholder = 'Int')
-input_4 = pn.widgets.TextInput(name = 'Exp Date', width = 90, placeholder = 'Date')
-input_5 = pn.widgets.TextInput(name = 'Exp Time', width = 90, placeholder = 'Time')
+input_1 = pn.widgets.TextInput(name = 'Object Name', width = 80, placeholder = 'String')
+input_2 = pn.widgets.IntInput(name = 'Fiber Number', width = 80, placeholder = 'Int')
+input_3 = pn.widgets.IntInput(name = 'Animal Number', width = 80, placeholder = 'Int')
+input_4 = pn.widgets.TextInput(name = 'Exp Date', width = 80, placeholder = 'Date')
+input_5 = pn.widgets.TextInput(name = 'Exp Time', width = 80, placeholder = 'Time')
 input_col = pn.Column(input_1, input_2, input_3, input_4, input_5)
 fpho_input = pn.widgets.FileInput(name = 'Upload FiberPho Data', accept = '.csv') #File input parameter
 
 #Buttons
-upload_button = pn.widgets.Button(name = 'Create Object', button_type = 'primary', width = 500, sizing_mode = 'stretch_width', align = 'end')
+upload_button = pn.widgets.Button(name = 'Create Object', button_type = 'primary', width = 300, sizing_mode = 'stretch_width')
 upload_button.on_click(run_init_fiberobj) #Button action
 
 #Box
-init_obj_box = pn.WidgetBox('# Input Params', fpho_input, input_col, upload_button)
+init_obj_box = pn.WidgetBox('##Create Object', fpho_input, input_col, upload_button)
 
 # ----------------------------------------------------- # 
 # ----------------------------------------------------- # 
 #Load fiberobj Widget
 
 #Input variables
-upload_pkl_selecta = pn.widgets.FileInput(name = 'Upload Saved Fiber Objects', accept = '.pickle', multiple=True) #File input parameter
+upload_pkl_selecta = pn.widgets.FileInput(name = 'Upload Saved Fiber Objects', accept = '.pickle', multiple = True) #File input parameter
 
 #Buttons
-upload_pkl_btn = pn.widgets.Button(name = 'Upload Object', button_type = 'primary', width = 500, sizing_mode = 'stretch_width', align = 'end')
+upload_pkl_btn = pn.widgets.Button(name = 'Upload Object', button_type = 'primary', width = 400, sizing_mode = 'stretch_width', align = 'end')
 upload_pkl_btn.on_click(run_upload_fiberobj) #Button action
 
 #Box
@@ -408,11 +404,11 @@ load_obj_box = pn.WidgetBox('# Reload saved Fiber Objects', upload_pkl_selecta, 
 save_obj_selecta = pn.widgets.MultiSelect(name = 'Fiber Objects', value = [], options = [], )
 
 #Buttons
-save_obj_btn = pn.widgets.Button(name = 'Save Object', button_type = 'primary', width = 500, sizing_mode = 'stretch_width', align = 'end')
+save_obj_btn = pn.widgets.Button(name = 'Save Object', button_type = 'primary', width = 400, sizing_mode = 'stretch_width', align = 'end')
 save_obj_btn.on_click(run_save_fiberobj) #Button action
 
 #Box
-save_obj_box = pn.WidgetBox('# Save Fiber Objects for later', save_obj_selecta, save_obj_btn)
+save_obj_box = pn.WidgetBox('## Save Fiber Objects for later', save_obj_selecta, save_obj_btn)
 
 # ----------------------------------------------------- #
 
@@ -480,7 +476,8 @@ upload_lick_btn = pn.widgets.Button(name = 'Upload', button_type = 'primary', wi
 upload_lick_btn.on_click(run_convert_lick)
 
 upload_beh_info = pn.pane.Markdown("""
-                                        Imports user uploaded behavior data and reads dataframe to update and include subject, behavior, and status columns to the dataframe.
+                                        Imports user uploaded behavior data and reads dataframe to update and include subject, behavior, and status columns to the dataframe. <br>
+                                        **You must upload a valid csv here to perform any behavior analysis (Skip otherwise)**
                                     """, width = 200)
 
 convert_info = pn.pane.Markdown(""" - Upload lickometer data to be converted to behavior file formatting <br>
@@ -494,7 +491,7 @@ lick_options = pn.Column(convert_info, lick_input, upload_lick_btn)
 beh_tabs = pn.Tabs(('Behavior Import', behav_options), ('Lick 2 Boris', lick_options))
 
 upload_beh_widget = pn.WidgetBox('# Import Behavior file', beh_tabs)
-upload_beh_card = pn.Card(upload_beh_widget, title = 'Import Behavior', background = 'WhiteSmoke', width = 600, collapsed = True)
+upload_beh_card = pn.Card(upload_beh_widget, title = 'Import Behavior', background = 'WhiteSmoke', width = 400)
 
 
 # ----------------------------------------------------- # 
@@ -533,8 +530,8 @@ zbehs_selecta = pn.widgets.MultiSelect(name = 'Behavior', value = [], options = 
 zchannel_selecta = pn.widgets.MultiSelect(name = 'Signal', value = [], options = [], )
 time_before = pn.widgets.IntInput(name = 'Time before event(s)', width = 50, placeholder = 'Seconds', value = 2)
 time_after = pn.widgets.IntInput(name = 'Time after initiation(s)', width = 50, placeholder = 'Seconds', value = 5)
-baseline_start = pn.widgets.LiteralInput(name = 'Baseline Window Start Time (s)', width = 50, placeholder = 'Seconds', value = 0)
-baseline_end = pn.widgets.LiteralInput(name = 'Baseline Window End Time (s)', width = 50, placeholder = 'Seconds', value = 0)
+baseline_start = pn.widgets.IntInput(name = 'Baseline Window Start Time (s)', width = 50, placeholder = 'Seconds', value = 0)
+baseline_end = pn.widgets.IntInput(name = 'Baseline Window End Time (s)', width = 50, placeholder = 'Seconds', value = 0)
 z_score_note = pn.pane.Markdown("""
                                    ***Note :***<br>
                                    - Baseline Window Parameters should be kept 0 unless you are using baseline<br> 
@@ -625,33 +622,74 @@ beh_corr_card = pn.Card(beh_corr_widget, clear_beh_corr, title = 'Behavior Speci
 # ----------------------------------------------------- # 
 #Object info widget
 
-#Input variables
+# Input variables
 info_selecta = pn.widgets.MultiSelect(name = 'Objects', value = [], options = [], )
 #Buttons
 # obj_info_btn = pn.widgets.Button(name = "Read", button_type = 'primary', width = 200)
 # obj_info_btn.on_click(get_obj_info)
 
 #Table
-info_table = pn.widgets.Tabulator(fiber_data, theme = "fast", height = 300, page_size = 10)
-obj_info_card = pn.Card(info_table, title = "Display Object Attributes", background = 'WhiteSmoke', width = 200)
+info_table = pn.widgets.Tabulator(fiber_data, theme = "fast", height = 300, page_size = 10, disabled = True)
+obj_info_card = pn.Card(info_table, title = "Display Object Attributes", background = 'WhiteSmoke', width = 200, collapsed = False)
 
 # ----------------------------------------------------- # 
+# FastGrid Template (I like this better; Update, nvm)
+# template = pn.template.FastGridTemplate(site = "Donaldson Lab: Fiber Photometry", title = "FiberPho GUI",
+#                                         # cols = {'lg': 12, 'md': 12, 'sm': 12, 'xs': 12, 'xxs': 12},
+#                                         prevent_collision = True,
+#                                         save_layout = True,
+#                                         row_height = 200,
+#                                         background_color = ACCENT_COLOR_BG, header_background = ACCENT_COLOR_HEAD
+#                                        )
 
-#Append widgets to gui template
-template.sidebar.append(init_obj_box)
-template.sidebar.append(save_obj_box)
-template.sidebar.append(load_obj_box)
-template.sidebar.append(obj_info_card)
-template.main.append(plot_raw_card)
-template.main.append(norm_sig_card)
-template.main.append(upload_beh_card)
-template.main.append(plot_beh_card)
-template.main.append(zscore_card)
-template.main.append(pearsons_card)
-template.main.append(beh_corr_card)
-# template.main.append(visuals)
+# Golden Template
+# template = pn.template.GoldenTemplate(site = "Donaldson Lab: Fiber Photometry", title = 'FiberPho GUI',
+#                                       sidebar = ["**Upload CSV** and set **Input Parameters** for your fiber object here"],
+#                                       header_background = ACCENT_COLOR_BG, header_color = ACCENT_COLOR_HEAD
+#                                      )
 
-template.servable()
+# Material Template
+material = pn.template.MaterialTemplate(site = 'Donaldson Lab: Fiber Photometry', title = 'FiberPho GUI',
+                                        header_color = ACCENT_COLOR_BG, header_background = ACCENT_COLOR_HEAD
+                                       )
+
+
+# Append widgets to Material Template
+material.sidebar.append(pn.pane.Markdown("**Upload CSV** and set **Input Parameters** for your fiber object here"))
+material.sidebar.append(init_obj_box)
+material.sidebar.append(load_obj_box)
+material.sidebar.append(save_obj_box)
+# material.sidebar.append(obj_info_card)
+
+material.main.append(
+                    pn.Row(
+                        upload_beh_card,
+                        obj_info_card
+                    )
+)
+material.main.append(plot_raw_card)
+material.main.append(norm_sig_card)
+material.main.append(plot_beh_card)
+material.main.append(zscore_card)
+material.main.append(pearsons_card)
+material.main.append(beh_corr_card)
+
+material.servable()
+
+# Append widgets to FastGrid Template
+# template.sidebar[:] = ["**Upload CSV** and set **Input Parameters** for your fiber object here", init_obj_box, save_obj_box, load_obj_box, obj_info_card]
+# template.main[:2, :] = upload_beh_card
+
+# Append widgets to Golden Template
+# template.sidebar.append(init_obj_box)
+# template.sidebar.append(save_obj_box)
+# template.sidebar.append(load_obj_box)
+# template.sidebar.append(obj_info_card)
+# template.main.append(
+#     pn.Row(
+#         plot_raw_card
+#     ), setTitle = "Hello"
+# )
 # In[4]:
 
 

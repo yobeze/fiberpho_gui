@@ -585,9 +585,9 @@ class fiberObj:
     z-score and SEM"""
         
         # Finds all times where behavior starts, turns into list
-        BehTimes=list(self.fpho_data_df[(self.fpho_data_df[beh]=='S')]['time_green'])
+        BehTimes = list(self.fpho_data_df[(self.fpho_data_df[beh] == 'S')]['time_green'])
         # Initialize figure
-        fig = make_subplots(rows=1, cols=2, subplot_titles=('Full trace with events', 'average'))
+        fig = make_subplots(rows = 1, cols = 2, subplot_titles = ('Full trace with events', 'average'))
         # Adds trace
         fig.add_trace(
             # Scatter plot
@@ -597,9 +597,9 @@ class fiberObj:
             x = self.fpho_data_df['time_green'],
             y = self.fpho_data_df[channel],
             mode = "lines",
-            line = go.scatter.Line(color="Green"),
+            line = go.scatter.Line(color = "Green"),
             name = channel,
-            showlegend = False), row = 1, col =1
+            showlegend = False), row = 1, col = 1
         )
 
         # Initializes ...
