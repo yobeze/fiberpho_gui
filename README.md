@@ -1,4 +1,4 @@
-# CU Boulder Donaldson Lab: Fiber Photometry GUI
+# Fiber Photometry GUI by CU Boulder's Donaldson Lab
 
 ## Installation Instructions
 
