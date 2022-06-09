@@ -69,3 +69,5 @@ This command will launch the GUI in a new browser window or tab. \
 
 **Run with Jupyter Notebook:** \
 If you would like to utilize Jupyter Notebook to deploy the server, simply navigate to the `Fiber-Pho-Main` folder then simply run the `jupyter lab` command and wait for Jupyter to open in a new browser window/tab. Open the notebook (.ipynb) file and begin to execute each cell from the top, *making sure* to let each cell finish execution before continuing to the next. Upon execution of the final cell, a local URL will be produced that navigates to the interface `(e.g. http://localhost:#####)`.
+> If using Anaconda, any errors that may arise will be displayed under the cells in the notebook. \
+> Otherwise, any errors in the application will appear in your device's terminal window.
