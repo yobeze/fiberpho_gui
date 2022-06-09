@@ -48,24 +48,24 @@ https://pip.pypa.io/en/stable/installation/
             - `conda activate [Environment Name]`
 
 3. You only need to complete the above steps once, afterwards, you must always activate the virtual environment you named and created to properly run the GUI:
-- PIP Users: 
+- PIP Users Example: 
     - Mac/Unix: `source gui_env/bin/activate`
     - Windows: `.\gui_env\Scripts\activate`
-- Anaconda Users:
+- Anaconda Users Example:
     - `conda activate gui_env`
 
 **The Fiber Photometry GUI should now be installed and ready to use**
 
-You have the option of utilizing the our GUI through either a simple python command in your terminal/prompt or using Jupyter Notebook. The instructions for each are below -
+You have the option of utilizing the GUI through either a simple python command in your terminal/prompt or using Jupyter Notebook. The instructions for each are below -
 
-**Run with Python Script:**
+**Run with Python Script:** \
 If you would like to deploy the server through the terminal *(recommended)*, follow the below instructions:
 In your terminal/prompt, navigate to the location of the `Fiber-Pho-Main` folder and run the following command -
 
 `panel serve --show FiberGuiScript.py --websocket-max-message-size=104876000 --autoreload`
 
 This command will launch the GUI in a new browser window or tab. \
-**Code changes refreshes entire instance**
+> Note: Any code changes made to the `.py` file will refresh the entire instance. To avoid this, omit the `--autoreload` argument.
 
-**Run with Jupyter Notebook:**
+**Run with Jupyter Notebook:** \
 If you would like to utilize Jupyter Notebook to deploy the server, simply navigate to the `Fiber-Pho-Main` folder then simply run the `jupyter lab` command and wait for Jupyter to open in a new browser window/tab. Open the notebook (.ipynb) file and begin to execute each cell from the top, *making sure* to let each cell finish execution before continuing to the next. Upon execution of the final cell, a local URL will be produced that navigates to the interface `(e.g. http://localhost:#####)`.
