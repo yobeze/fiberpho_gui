@@ -84,12 +84,12 @@ class fiberObj:
         if start_time == -1:
             self.start_idx = 1
         else:
-            self.start_idx = searchsorted(file['Timestamp'], start_time)
+            self.start_idx = np.searchsorted(file['Timestamp'], start_time)
         
-        if stop_time == -1:
+        if stop_time == 0:
             self.stop_idx = len(file['Timestamp'])
         else:
-            self.stop_idx = searchsorted(file['Timestamp'], stop_time) 
+            self.stop_idx = np.searchsorted(file['Timestamp'], stop_time) 
             
         #modify to accept dictionary w values
         start_is_not_green = True
