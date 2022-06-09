@@ -3,7 +3,7 @@
 ## Installation Instructions
 
 **New Users: Follow the instructions below to install the GUI:**
-> Our code utilizes Python and numerous packages within it, if you do not already have Python >= 3.6 installed on your device, please refer to these links before continuing: <br>
+> Our code utilizes Python and numerous packages within it, if you do not already have Python >= 3.8 installed on your device, please refer to these links before continuing: <br>
 https://wiki.python.org/moin/BeginnersGuide/Download \
 https://docs.anaconda.com/anaconda/install/ \
 https://pip.pypa.io/en/stable/installation/
@@ -27,12 +27,12 @@ https://pip.pypa.io/en/stable/installation/
         3. Activate the virtual environment:
             - Mac/Unix: `source gui_env/bin/activate`
             - Windows: `.\gui_env\Scripts\activate`
-        4. Confirm you are in the virtual environment:
+        4. Confirm you are in the virtual environment/directory:
             - Mac/Unix: `which python`
+                - Ex. directory: `.../env/bin/python`
             - Windows: `where python` 
-            - You should be in the *gui_env* directory: 
-            - Mac/Unix: `.../env/bin/python`
-            - Windows: `...\env\Scripts\python.exe`
+                - Ex. directory: `...\env\Scripts\python.exe`
+            - You should be in the given *environment_name* directory: 
         5. Execute the following command: `pip3 install -r requirements.txt`
             > Type "pip list" to ensure all necessary dependencies are installed
     - Using Anaconda:
