@@ -6,7 +6,9 @@
 > Our code utilizes Python and numerous packages within it, if you do not already have Python >= 3.8 installed on your device, please refer to these links before continuing: <br>
 https://wiki.python.org/moin/BeginnersGuide/Download \
 https://docs.anaconda.com/anaconda/install/ \
-https://pip.pypa.io/en/stable/installation/
+https://pip.pypa.io/en/stable/installation/ \
+
+*Note: this application was developed and tested with Python version 3.9, so it is recommended to install this version or higher in your environment.*
 
 1. Download Code
 - Click on the green button labeled "Code" located at the top right corner of this repository and click on Download ZIP (Ensure that this file is saved locally on your device, in other words not on any cloud environments.
@@ -17,7 +19,7 @@ https://pip.pypa.io/en/stable/installation/
 
 2. Create Virtual Environment
     > We will be creating a virtual environment to ensure that there are no issues with any currently installed python packages/modules. It may seem tedious/long but it is for precautionary purposes. You may install the GUI using either Anaconda or PIP/PyPI. We recommend using Anaconda to utilize Jupyter Notebook for ease of use and inline error logging. The instructions for both are below:
-    - Using PIP/PyPI:
+    - **Using PIP/PyPI:**
         1. Open a new terminal window and navigate to the location of the fiberpho_gui folder (from step 1C)
             - Type "cd path_to_fiberpho_gui_folder" and ensure you are in the write directory
             - Ex - "cd Desktop/DonaldsonLab/fiberpho_gui"
@@ -35,7 +37,7 @@ https://pip.pypa.io/en/stable/installation/
             - You should be in the given *environment_name* directory: 
         5. Execute the following command: `pip3 install -r requirements.txt`
             > Type "pip list" to ensure all necessary dependencies are installed
-    - Using Anaconda:
+    - **Using Anaconda:**
         1. Open a new terminal window(Mac/Unix) or Anaconda prompt(Windows)
         2. Navigate to the location of your fiberpho_gui folder (from step 1C).
             - Type "cd path_to_fiberpho_gui_folder" and ensure you are in the write directory
@@ -43,7 +45,6 @@ https://pip.pypa.io/en/stable/installation/
         3. Create a virtual environment with the following command:
             - `conda create -n [Environment Name] python=<version> anaconda`
             - Ex: `conda create -n gui_env python=3.9 anaconda`
-            - *Note: this application was developed and tested with Python version 3.9, so it is recommended to install this version in your environment. You are welcome to install a later version of Python.
         4. Activate the virtual environment
             - `conda activate [Environment Name]`
 
