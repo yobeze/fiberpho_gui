@@ -62,6 +62,107 @@ def lick_to_boris(lick_file):
 
 class fiberObj:
     
+    """
+        A class to represent a fiber object for fiber photometry and behavior analysis.
+
+
+    Attributes
+    ----------
+    obj_name : str
+        Name of the fiber object
+    
+    fiber_num : int
+        Fiber number used in photometry data (ranges from 0 - 2 as of now)
+        
+    animal_num : int
+        The animal number used in the experiment
+        
+    exp_date : Date-string (MM/DD)
+        Date of the captured photometry recording
+    
+    exp_time : Time (Hr/Min)
+        Time of the captured photometry recording
+        
+    start_time : int
+        Time to exclude from beginning of recording
+    
+    stop_time : int
+        Time to stop at from start of recording 
+        
+    file_name : str
+        File name of the uploaded photometry data
+    
+    beh_file : Dataframe
+        Stores a pandas dataframe of the behavior recording
+        
+    beh_filename : str
+        Name of the behavior dataset
+        
+    behaviors : set
+        Stores unique behaviors of fiber object
+    
+    channels : set
+        Stores the signals used in photometry data
+        
+    full_corr_results : Dataframe
+        Stores results of the Pearsons correlation analysis in a pandas dataframe
+    
+    beh_corr_results : dict
+        Stores results of the Behavior specific Pearsons correlation in a dictionary
+        
+    fpho_data_dict : dict
+        Stores photometry data into a dictionary
+        
+    fpho_data_df : Dataframe
+        Uses fpho_data_dict to convert photometry data into a pandas dataframe for use
+    ----------
+    
+    Methods
+    ----------
+    __init__(file, obj, fiber_num, animal, exp_date, 
+                exp_start_time, start_time, stop_time, filename):
+        Initializes an instance of a fiber object. Holds all the data from a fiber 
+        experiment as well as some results from analysis. Takes in a fiber photometry
+        file (.csv) and parses it into a dataframe (fpho_data_df) with 9 columns: time_iso, time_green,
+        time_red, green_iso, green_green, green_red, red_iso, red_green, red_red.
+
+    raw_signal_trace():
+        Creates and displays graphs of a fiber object's signals.
+        
+
+    normalize_a_signal(signal, reference):
+        Normalizes the signal and reference trace to a biexponential, linearly fits the
+        normalized reference to the normalized signal. Stores all fitted traces in a
+        dataframe and plots them for examination. If the fit is not good, it will
+        instead opt to use the median.
+        
+    import_behavior_data(BORIS_filename, filename):
+        Imports user uploaded behavior data and reads dataframe to update and include
+        the subject, behavior, and status columns to the dataframe (fpho_data_df).
+        
+    plot_behavior(behaviors, channels):
+        Creates and displays the different channels from the behavior dataset
+        
+    plot_zscore(channel, beh, time_before, time_after,
+                    baseline = 0, base_option = 0):
+        Takes a dataframe and creates a plot of z-scores for each time a select
+        behavior occurs with the avg z-score and standard error mean.
+        
+    within_trial_pearsons(obj2, channel):
+        Takes in user chosen objects/channels and returns their Pearson's correlation
+        coefficient and r value between 2 full channels and plots their signals
+        overlaid and their scatter plots.
+        
+    behavior_specific_pearsons(obj2, channel, behavior):
+        Takes in user chosen objects/channels and behaviors to calculate behavior
+        specific Pearson correlations and plots their signals overlaid as well
+        as their scatter plots.
+        
+    ----------
+        
+    """
+
+
     def __init__(self, file, obj, fiber_num, animal, exp_date,
                  exp_start_time, start_time, stop_time, filename):
         self.obj_name = obj

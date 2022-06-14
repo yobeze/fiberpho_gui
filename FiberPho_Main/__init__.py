@@ -1,2 +1,2 @@
 # __init__.py
-from .FiberClass import fiberObj
+from FiberClass import *
