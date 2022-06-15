@@ -13,7 +13,7 @@ https://pip.pypa.io/en/stable/installation/ \
 1. Download Code
 - Click on the green button labeled "Code" located at the top right corner of this repository and click on Download ZIP (Ensure that this file is saved locally on your device, in other words not on any cloud environments.
 - Go to the downloaded zip file on your device and place it somewhere convenient to you so that you may easily navigate to it, again avoiding cloud storage.
-- Unzip the file by clicking on it or using an unzipping utility (e.g. WinRAR), and take note of the Fiber-Pho-Main folder's path, we will need this later.)
+- Unzip the file by clicking on it or using an unzipping utility (e.g. WinRAR), and take note of the FiberPho_Main folder's path, we will need this later.)
     - Mac/Unix: Right click folder &rarr Hold Option key &rarr Click Copy "fiberpho_gui" as Pathname.
     - Windows: Right click folder &rarr Properties &rarr Take note of text next to "Location:"
 
@@ -61,7 +61,7 @@ You have the option of utilizing the GUI through either a simple python command 
 
 **Run with Python Script:** \
 If you would like to deploy the server through the terminal *(recommended)*, follow the below instructions:
-In your terminal/prompt, navigate to the location of the `Fiber-Pho-Main` folder and run the following command -
+In your terminal/prompt, navigate to the location of the `FiberPho_Main` folder and run the following command -
 
 `panel serve --show FiberGuiScript.py --websocket-max-message-size=104876000 --autoreload`
 
@@ -69,6 +69,6 @@ This command will launch the GUI in a new browser window or tab. \
 > Note: Any code changes made to the `.py` file will refresh the entire instance. To avoid this, omit the `--autoreload` argument.
 
 **Run with Jupyter Notebook:** \
-If you would like to utilize Jupyter Notebook to deploy the server, simply navigate to the `Fiber-Pho-Main` folder then simply run the `jupyter lab` command and wait for Jupyter to open in a new browser window/tab. Open the notebook (.ipynb) file and begin to execute each cell from the top, *making sure* to let each cell finish execution before continuing to the next. Upon execution of the final cell, a local URL will be produced that navigates to the interface `(e.g. http://localhost:#####)`.
+If you would like to utilize Jupyter Notebook to deploy the server, simply navigate to the `FiberPho_Main` folder then simply run the `jupyter lab` command and wait for Jupyter to open in a new browser window/tab. Open the notebook (.ipynb) file and begin to execute each cell from the top, *making sure* to let each cell finish execution before continuing to the next. Upon execution of the final cell, a local URL will be produced that navigates to the interface `(e.g. http://localhost:#####)`.
 > If using Anaconda, any errors that may arise will be displayed under the cells in the notebook. \
 > Otherwise, any errors in the application will appear in your device's terminal window.
