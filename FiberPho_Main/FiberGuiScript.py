@@ -520,7 +520,7 @@ lick_options = pn.Column(convert_info, lick_input, upload_lick_btn)
 beh_tabs = pn.Tabs(('Behavior Import', behav_options), ('Lick 2 Boris', lick_options))
 
 upload_beh_widget = pn.WidgetBox('# Import Behavior file', beh_tabs)
-upload_beh_card = pn.Card(upload_beh_widget, title = 'Import Behavior', background = 'WhiteSmoke', width = 400)
+upload_beh_card = pn.Card(upload_beh_widget, title = 'Import Behavior', background = 'WhiteSmoke', collapsed = True, width = 400)
 
 
 # ----------------------------------------------------- # 
@@ -652,8 +652,8 @@ beh_corr_card = pn.Card(beh_corr_widget, clear_beh_corr, title = 'Behavior Speci
 #Object info widget
 
 #Table
-info_table = pn.widgets.Tabulator(fiber_data, theme = "fast", height = 300, page_size = 10, disabled = True)
-obj_info_card = pn.Card(info_table, title = "Display Object Attributes", background = 'WhiteSmoke', width = 200, collapsed = False)
+info_table = pn.widgets.Tabulator(fiber_data, theme = "fast", height = 200, page_size = 10, disabled = True)
+obj_info_card = pn.Card(info_table, title = "Display Object Attributes", background = 'WhiteSmoke', width = 200, collapsed = True)
 
 # ----------------------------------------------------- # 
 

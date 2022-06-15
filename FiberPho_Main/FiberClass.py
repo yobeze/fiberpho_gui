@@ -65,7 +65,6 @@ class fiberObj:
     """
         A class to represent a fiber object for fiber photometry and behavior analysis.
 
-
     Attributes
     ----------
     obj_name : str
@@ -116,6 +115,7 @@ class fiberObj:
     fpho_data_df : Dataframe
         Uses fpho_data_dict to convert photometry data into a pandas dataframe for use
     ----------
+    
     
     Methods
     ----------
