@@ -4,3 +4,4 @@
 *.pickle
 *.csv
 /tests
+*.DS_Store
