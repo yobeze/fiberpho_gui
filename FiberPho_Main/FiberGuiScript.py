@@ -20,6 +20,8 @@ from plotly.subplots import make_subplots
 from pathlib import Path
 import pickle
 import FiberClass as fc
+from bokeh.resources  import settings
+settings.resources = 'inline'
 
 
 '''
@@ -30,7 +32,8 @@ Command to run script:
 
 pn.extension('plotly', sizing_mode = "stretch_width", 
              loading_color = '#00aa41')
-pn.config.console_output = 'disable'
+# pn.config.console_output = 'enable'
+
 #Dictionary of fiber objects
 fiber_objs = {}
 #Dataframe of object's info
@@ -198,6 +201,8 @@ def run_plot_behavior(event = None):
     #For len of selected objs, create and plot behavior data
     for objs in selected_objs:
         temp = fiber_objs[objs]
+        # if temp.beh_file is None: # Bug: Plot behavior still runs even without behavior file
+            
         plot_pane = pn.pane.Plotly(height = len(channel_selecta.value) * 300,
                                    sizing_mode = "stretch_width") #Creates pane for plotting
         plot_pane.object = temp.plot_behavior(behavior_selecta.value,
@@ -684,6 +689,7 @@ material.main.append(pearsons_card)
 material.main.append(beh_corr_card)
 
 material.servable()
+# material.show()
 
 # FastGrid Template
 # template = pn.template.FastGridTemplate(site = "Donaldson Lab: Fiber Photometry", title = "FiberPho GUI",

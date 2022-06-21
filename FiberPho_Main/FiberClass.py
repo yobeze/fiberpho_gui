@@ -688,7 +688,7 @@ class fiberObj:
         # Initialize figure
         fig = make_subplots(rows = 1, cols = 2,
                             subplot_titles = ('Full trace with events',
-                                              'average'
+                                              'Average'
                                              )
                            )
         # Adds trace
@@ -1000,11 +1000,11 @@ class fiberObj:
             row = 1, col = 1
             )
         fig.update_layout(
-                title = channel + ' while' + beh + ' for '
+                title = channel + ' while ' + beh + ' for '
                       + self.obj_name + obj2.obj_name
                 )
-        fig.update_xaxes(title_text = channel + ' zscore', col = 2, row = 1)
-        fig.update_yaxes(title_text = channel + ' zscore', col = 2, row = 1)
+        fig.update_xaxes(title_text = channel + ' Zscore', col = 2, row = 1)
+        fig.update_yaxes(title_text = channel + ' Zscore', col = 2, row = 1)
         fig.update_xaxes(title_text = 'Time (s)', col = 1, row = 1)
         fig.update_yaxes(title_text = 'Zscore', col = 1, row = 1)
 
