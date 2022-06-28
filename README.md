@@ -3,7 +3,7 @@
 ## Installation Instructions
 
 **Current Users: Repeat Step 1 and activate as usual when a new update of the FiberPho GUI has been released**
-**New Users: Follow the instructions below to install the GUI:**
+**New Users: Follow the instructions below to install the GUI**
 > Our code utilizes Python and numerous packages within it, if you do not already have Python >= 3.9 installed on your device, please refer to these links before continuing: <br>
 https://wiki.python.org/moin/BeginnersGuide/Download \
 https://docs.anaconda.com/anaconda/install/ \
