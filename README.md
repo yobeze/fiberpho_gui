@@ -19,7 +19,7 @@ https://pip.pypa.io/en/stable/installation/ \
     - Windows: Right click folder &rarr Properties &rarr Take note of text next to "Location:"
 
 2. Create Virtual Environment
-    > We will be creating a virtual environment to ensure that there are no issues with any currently installed python packages/modules. You only need to complete these steps once. You may install the GUI using either Anaconda or PIP/PyPI. We recommend using Anaconda to utilize Jupyter Notebook for ease of use and inline error logging. The instructions for both are below:
+    > We will be creating a virtual environment to ensure that there are no issues with any currently installed python packages/modules. You only need to complete these steps once. You may install the GUI using either Anaconda or PIP/PyPI. The instructions for both are below:
     - **Using PIP/PyPI:**
         1. Open a new terminal window and navigate to the location of the fiberpho_gui folder (from step 1C)
             - Type "cd path_to_fiberpho_gui_folder" and ensure you are in the write directory
