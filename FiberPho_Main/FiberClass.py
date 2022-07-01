@@ -677,7 +677,8 @@ class fiberObj:
         
     
     def plot_zscore(self, channel, beh, time_before, time_after,
-                    baseline = 0, base_option = 0):
+                    baseline = 0, base_option = 0, show_first = -1,
+                    show_last = 0, show_every = 1):
         """Takes a dataframe and creates plot of z-scores for
         each time a select behavior occurs with the avg
     z-score and SEM"""
@@ -789,29 +790,30 @@ class fiberObj:
                     # First value
                     Zscore_sum = this_Zscore
 
-                # Times for this event trace
-                x = self.fpho_data_df.loc[start_idx : end_idx, 'time_green']
-                # Trace color (First event blue, last event red)
-                trace_color = 'rgb(' + str(
-                    int((i+1) * 255/(len(beh_times)))) + ', 0, 255)'
-                # Adds a vertical line for each event time
-                fig.add_vline(x = time, line_dash = "dot", row = 1, col = 1)
-                # Adds trace for each event
-                fig.add_trace(
-                    # Scatter plot
-                    go.Scatter( 
-                    # Times starting at user input start time, ending at user input end time
-                    x = x - time,
-                    # Y = Zscore of event trace
-                    # y=ss.zscore(self.fpho_data_df.loc[start_idx:end_idx,channel]),
-                    y = this_Zscore, 
-                    mode="lines",
-                    line=dict(color = trace_color, width = 2),
-                    name = 'Event:' + str(i),
-                    text = 'Event:' + str(i),
-                    showlegend=True), 
-                    row=1, col=2
-                    )
+                if show_first == -1 or i in np.arange(show_first, show_last, show_every):
+                    # Times for this event trace
+                    x = self.fpho_data_df.loc[start_idx : end_idx, 'time_green']
+                    # Trace color (First event blue, last event red)
+                    trace_color = 'rgb(' + str(
+                        int((i+1) * 255/(len(beh_times)))) + ', 0, 255)'
+                    # Adds a vertical line for each event time
+                    fig.add_vline(x = time, line_dash = "dot", row = 1, col = 1)
+                    # Adds trace for each event
+                    fig.add_trace(
+                        # Scatter plot
+                        go.Scatter( 
+                        # Times starting at user input start time, ending at user input end time
+                        x = x - time,
+                        # Y = Zscore of event trace
+                        # y=ss.zscore(self.fpho_data_df.loc[start_idx:end_idx,channel]),
+                        y = this_Zscore, 
+                        mode="lines",
+                        line=dict(color = trace_color, width = 2),
+                        name = 'Event:' + str(i),
+                        text = 'Event:' + str(i),
+                        showlegend=True), 
+                        row=1, col=2
+                        )
                 
         fig.add_vline(x = 0, line_dash = "dot", row = 1, col = 2)
         # Adds trace
@@ -819,7 +821,7 @@ class fiberObj:
             # Scatter plot
             go.Scatter( 
             # Times for baseline window
-            x = x - time,
+            x = np.linspace(-time_before, time_after, num=len(x)),
             # Y = Zscore average of all event traces
             y = [i / n_events for i in Zscore_sum],
             mode="lines",
