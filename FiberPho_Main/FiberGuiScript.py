@@ -169,7 +169,6 @@ def run_plot_raw_trace(event):
     except KeyboardInterrupt:
         return
     except Exception as e:
-        # Logs any errors that arise directly from function
         logger.error(traceback.format_exc())
         # Insert appropriate print statements
         
@@ -195,21 +194,21 @@ def run_normalize_a_signal(event = None):
         
 #Read behavior data
 def run_import_behavior_data(event = None):
+    behav = behav_input.value
+    filename = behav_input.filename
+    path = io.StringIO(behav.decode("utf8"))
     selected_obj = behav_selecta.value
     obj = fiber_objs[selected_obj]
-    try: 
-        behav = behav_input.value
-        filename = behav_input.filename
-        path = io.StringIO(behav.decode("utf8"))
+    # fpho = obj.fpho_data_df
+    
+    if behav:
         obj.import_behavior_data(path, filename)
         fiber_data.loc[obj.obj_name, 'Behavior File'] = filename
         info_table.value = fiber_data
         upload_beh_card.append('# Behavior added to ' + selected_obj + ' successfully')
-    except KeyboardInterrupt:
-        return
-    except Exception as e:
-        print("Error reading/no behavior file has been uploaded")
-        return
+    else:
+        print("Error reading behavior data")
+        sys.exit(5)
                 
 #Plot behavior on a full trace
 def run_plot_behavior(event = None): 
@@ -246,19 +245,14 @@ def run_plot_zscore(event = None):
                              
 # Runs the pearsons correlation coefficient
 def run_trial_pearsons(event = None):
-    try:
-        for channels in pearsons_channel_selecta.value:
-            name1 = pearsons_selecta1.value
-            name2 = pearsons_selecta2.value
-            obj1 = fiber_objs[name1]
-            obj2 = fiber_objs[name2]
-            plot_pane = pn.pane.Plotly(height = 300, sizing_mode = "stretch_width") #Creates pane for plot
-            plot_pane.object = obj1.within_trial_pearsons(obj2, channels)
-            pearsons_card.append(plot_pane) #Add figure to template
-    except KeyboardInterrupt:
-        return
-    except Exception as e:
-        logger.error(traceback.format_exc())
+    for channels in pearsons_channel_selecta.value:
+        name1 = pearsons_selecta1.value
+        name2 = pearsons_selecta2.value
+        obj1 = fiber_objs[name1]
+        obj2 = fiber_objs[name2]
+        plot_pane = pn.pane.Plotly(height = 300, sizing_mode = "stretch_width") #Creates pane for plot
+        plot_pane.object = obj1.within_trial_pearsons(obj2, channels)
+        pearsons_card.append(plot_pane) #Add figure to template
 
 def run_beh_specific_pearsons(event = None):
     for channel in beh_corr_channel_selecta.value:
@@ -397,8 +391,16 @@ def run_convert_lick(event):
         beh_tabs[1].append(out_file)
     else:
         print('Error reading file')
+        
+        
+        
+# def error_logger(event):
+    # might have to add pn.extension('terminal')
+    # pn.config.console_output = 'disable'
+    # debug = pn.widgets.Debugger(name = "Error Logger")
     
     
+            
 # In[3]:
 # Accent Colors
 ACCENT_COLOR_HEAD = "#128CB6"
@@ -410,8 +412,7 @@ ACCENT_COLOR_BG = "#D9F3F3"
 # Error logger
 terminal = pn.widgets.Terminal(
     options = {"cursorBlink": False},
-    sizing_mode = 'stretch_width',
-    height = 200
+    height = 200, width = 1380, sizing_mode = 'fixed'
 )
 sys.stdout = terminal
 # Logger settings
@@ -434,9 +435,7 @@ logger_info = pn.pane.Markdown("""
                                 ##Logger
                             """, height = 40, width = 60)
 
-log_card = pn.Card(pn.Row(logger_info, clear_logs), terminal, title = 'Logs', background = 'WhiteSmoke', width = 600, collapsed = False)
-
-
+log_card = pn.WidgetBox(pn.Row(logger_info, clear_logs), terminal, background = 'WhiteSmoke', width = 1247, sizing_mode = 'fixed')
 
 # ----------------------------------------------------- # 
 # Init fiberobj Widget
@@ -570,7 +569,7 @@ behav_options = pn.Column(upload_beh_info, behav_selecta, behav_input, upload_be
 lick_options = pn.Column(convert_info, lick_input, upload_lick_btn)
 beh_tabs = pn.Tabs(('Behavior Import', behav_options), ('Lick to Boris', lick_options))
 
-upload_beh_widget = pn.WidgetBox('# Import Behavior file', beh_tabs)
+upload_beh_widget = pn.WidgetBox('# Import Behavior file', beh_tabs, height = 330)
 upload_beh_card = pn.Card(upload_beh_widget, title = 'Import Behavior', background = 'WhiteSmoke', collapsed = False)
 
 
@@ -709,8 +708,8 @@ beh_corr_card = pn.Card(beh_corr_widget, clear_beh_corr, title = 'Behavior Speci
 #Object info widget
 
 #Table
-info_table = pn.widgets.Tabulator(fiber_data, sizing_mode = 'scale_both', height = 250, page_size = 10, disabled = True)
-obj_info_card = pn.Card(info_table, title = "Display Object Attributes", background = 'WhiteSmoke', collapsed = True)
+info_table = pn.widgets.Tabulator(fiber_data, height = 330, page_size = 10, disabled = True)
+obj_info_card = pn.Card(info_table, title = "Display Object Attributes", background = 'WhiteSmoke', collapsed = False)
 
 # ----------------------------------------------------- # 
 
@@ -722,11 +721,14 @@ material = pn.template.MaterialTemplate(site = 'Donaldson Lab: Fiber Photometry'
 
 # Append widgets to Material Template
 material.sidebar.append(pn.pane.Markdown("** Upload your photometry data *(.csv)* ** and set your fiber object's **attributes** here"))
-material.sidebar.append(obj_info_card)
 material.sidebar.append(init_obj_box)
 material.sidebar.append(load_obj_box)
 material.sidebar.append(save_obj_box)
-material.main.append(upload_beh_card)
+# material.sidebar.append(obj_info_card)
+material.main.append(
+    pn.Row(upload_beh_card, obj_info_card #put terminal here
+          )
+)
 material.main.append(plot_raw_card)
 material.main.append(norm_sig_card)
 material.main.append(plot_beh_card)
