@@ -4,12 +4,12 @@
 
 **Current Users: Repeat Step 1 and activate as usual when a new update of the FiberPho GUI has been released**
 **New Users: Follow the instructions below to install the GUI**
-> Our code utilizes Python and numerous packages within it, if you do not already have Python >= 3.9 installed on your device, please refer to these links before continuing: <br>
+> Our code utilizes Python and numerous packages within it, if you do not already have Python installed on your device, please refer to these links before continuing: <br>
 https://wiki.python.org/moin/BeginnersGuide/Download \
 https://docs.anaconda.com/anaconda/install/ \
 https://pip.pypa.io/en/stable/installation/ \
 
-*Note: this application was developed and tested with Python version 3.9, so it is recommended to install this version or higher in your environment.*
+*Note: this application was developed and tested with Python version 3.8, so it is recommended to install this version or higher in your environment.*
 
 1. Download Code
 - Click on the green button labeled "Code" located at the top right corner of this repository and click on Download ZIP (Ensure that this file is saved locally on your device, in other words not on any cloud environments).
