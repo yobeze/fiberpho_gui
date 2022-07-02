@@ -4,12 +4,12 @@
 
 **Current Users: Repeat Step 1 and activate as usual when a new update of the FiberPho GUI has been released**
 **New Users: Follow the instructions below to install the GUI**
-> Our code utilizes Python and numerous packages within it, if you do not already have Python installed on your device, please refer to these links before continuing: <br>
+> Our code utilizes Python and numerous packages within it, if you do not already have Python >= 3.9 installed on your device, please refer to these links before continuing: <br>
 https://wiki.python.org/moin/BeginnersGuide/Download \
 https://docs.anaconda.com/anaconda/install/ \
 https://pip.pypa.io/en/stable/installation/ \
 
-*Note: this application was developed and tested with Python version 3.8, so it is recommended to install this version or higher in your environment.*
+*Note: this application was developed and tested with Python version 3.9, so it is recommended to install this version or higher in your environment.*
 
 1. Download Code
 - Click on the green button labeled "Code" located at the top right corner of this repository and click on Download ZIP (Ensure that this file is saved locally on your device, in other words not on any cloud environments).
@@ -19,7 +19,7 @@ https://pip.pypa.io/en/stable/installation/ \
     - Windows: Right click folder &rarr Properties &rarr Take note of text next to "Location:"
 
 2. Create Virtual Environment
-    > We will be creating a virtual environment to ensure that there are no issues with any currently installed python packages/modules. You only need to complete these steps once. You may install the GUI using either Anaconda or PIP/PyPI. The instructions for both are below:
+    > We will be creating a virtual environment to ensure that there are no issues with any currently installed python packages/modules. You only need to complete these steps once. You may install the GUI using either Anaconda or PIP/PyPI. We recommend using Anaconda to utilize Jupyter Notebook for ease of use and inline error logging. The instructions for both are below:
     - **Using PIP/PyPI:**
         1. Open a new terminal window and navigate to the location of the fiberpho_gui folder (from step 1C)
             - Type "cd path_to_fiberpho_gui_folder" and ensure you are in the write directory
