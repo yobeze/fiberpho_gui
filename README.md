@@ -2,9 +2,9 @@
 
 ## Installation Instructions
 
-**Current Users: Repeat Step 1 and activate as usual when a new update of the FiberPho GUI has been released**
+**Current Users: Repeat Step 1 and activate as usual when a new update of the FiberPho GUI has been released** \
 **New Users: Follow the instructions below to install the GUI**
-> Our code utilizes Python and numerous packages within it, if you do not already have Python >= 3.9 installed on your device, please refer to these links before continuing: <br>
+> Our code utilizes Python and numerous packages within it, if you do not already have Python installed on your device, please refer to these links before continuing: <br>
 https://wiki.python.org/moin/BeginnersGuide/Download \
 https://docs.anaconda.com/anaconda/install/ \
 https://pip.pypa.io/en/stable/installation/ \
@@ -41,13 +41,15 @@ https://pip.pypa.io/en/stable/installation/ \
     - **Using Anaconda:**
         1. Open a new terminal window(Mac/Unix) or Anaconda prompt(Windows)
         2. Navigate to the location of your fiberpho_gui folder (from step 1C).
-            - Type "cd path_to_fiberpho_gui_folder" and ensure you are in the write directory
+            - Type "cd path_to_fiberpho_gui_folder" and ensure you are in the right directory
             - Ex - "cd Desktop/DonaldsonLab/fiberpho_gui"
         3. Create a virtual environment with the following command:
-            - `conda create -n [Environment Name] python=<version> anaconda`
-            - Ex: `conda create -n gui_env python=3.9 anaconda`
-        4. Activate the virtual environment
+            - `conda create -n [Environment Name] python=<version> pip`
+            - Ex: `conda create -n gui_env python=3.9 pip`
+        4. Activate the virtual environment:
             - `conda activate [Environment Name]`
+        5. Execute the following command: `pip install -r requirements.txt`
+            > Type "pip list" to ensure all necessary dependencies are installed
 
 3. Activate Virtual Environment
     > You must always activate the environment you created with its given name in order to run the GUI.
@@ -73,4 +75,3 @@ This command will launch the GUI in a new browser window or tab. \
 **Run with Jupyter Notebook:** \
 If you would like to utilize Jupyter Notebook to deploy the server, simply navigate to the `FiberPho_Main` folder then simply run the `jupyter lab` command and wait for Jupyter to open in a new browser window/tab. Open the notebook (.ipynb) file and begin to execute each cell from the top, *making sure* to let each cell finish execution before continuing to the next. Upon execution of the final cell, a local URL will be produced that navigates to the interface `(e.g. http://localhost:#####)`.
 > If using Anaconda, any errors that may arise will be displayed under the cells in the notebook. \
-> Otherwise, any errors in the application will appear in your device's terminal window.
