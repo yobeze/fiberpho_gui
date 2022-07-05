@@ -1002,8 +1002,8 @@ class fiberObj:
             row = 1, col = 1
             )
         fig.update_layout(
-                title = channel + ' while ' + beh + ' for '
-                      + self.obj_name + obj2.obj_name
+                title = 'Correlation between ' + self.obj_name + ' and ' 
+                  + obj2.obj_name + ' during ' + beh + ' is, ' + str(r) + ' p = ' + str(p)
                 )
         fig.update_xaxes(title_text = channel + ' Zscore', col = 2, row = 1)
         fig.update_yaxes(title_text = channel + ' Zscore', col = 2, row = 1)
