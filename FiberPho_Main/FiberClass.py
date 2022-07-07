@@ -161,8 +161,6 @@ class fiberObj:
     ----------
         
     """
-
-
     def __init__(self, file, obj, fiber_num, animal, exp_date,
                  exp_start_time, start_time, stop_time, filename):
         self.obj_name = obj
@@ -179,68 +177,67 @@ class fiberObj:
         self.channels = set()
         self.full_corr_results = pd.DataFrame([], index = [self.obj_name])
         self.beh_corr_results = {}
-        
+        self.color_dict = {'Raw_Green' : 'LawnGreen', 'Raw_Red': 'Red', 'Raw_Isosbestic': 'Cyan', 'Green_Normalized': 'MediumSeaGreen', 'Red_Normalized': 'Dark_Red', 'Isosbestic_Normalized':'DeepSkyBlue'}
         file['Timestamp'] = (file['Timestamp'] - file['Timestamp'][0])
         
-        if start_time == -1:
-            self.start_idx = 1
+        if start_time == 0:
+            self.start_idx = 0
         else:
             self.start_idx = np.searchsorted(file['Timestamp'], start_time)
         
-        if stop_time == 0:
+        if stop_time == -1:
             self.stop_idx = len(file['Timestamp'])
         else:
             self.stop_idx = np.searchsorted(file['Timestamp'], stop_time) 
+        
+        time_slice = file.iloc[self.start_idx : self.stop_idx]
+        
+        data_dict = {}
+        
+        #Check for green ROI
+        try: 
+            test_green = file.columns.str.endswith('G')
+        except:
+            green_ROI = False
+            print('no green ROI found')
+        else:
+            green_ROI = True
+            green_col = np.where(test_green)[0][self.fiber_num - 1]
             
-        #modify to accept dictionary w values
-        start_is_not_green = True
-        while(start_is_not_green):
-            if file["LedState"][self.start_idx] == 2:
-                start_is_not_green = False
-            if file["LedState"][self.start_idx] == 4:
-                start_is_not_green = True
-                self.start_idx = self.start_idx + 1
-            if file["LedState"][self.start_idx] == 1:
-                start_is_not_green = True
-                self.start_idx = self.start_idx + 1
-    
-        #make values between start and stop divisible by 3
-        values = self.stop_idx - self.start_idx
-        extras = values % 3
-        self.stop_idx = int(self.stop_idx - extras)
+        #Check for red ROI   
+        try: 
+            test_red = file.columns.str.endswith('R')
+        except:
+            red_ROI = False
+            print('no green ROI found')
+        else:
+            red_ROI = True
+            red_col = np.where(test_red)[0][self.fiber_num - 1]
         
-        #Setting column values
-        #Finds columns by str and sets to assigns index to numpy array
-        time_col = 1
-        test_green = file.columns.str.endswith('G')
-        green_col = np.where(test_green)[0][self.fiber_num - 1]
-        self.channels.add('Raw_Green')
-        self.channels.add('Raw_Isosbestic')
-        test_red = file.columns.str.endswith('R')
-        red_col = np.where(test_red)[0][self.fiber_num - 1]
-        self.channels.add('Raw_Red')  
+        led_states = file['LedState'][2:8].unique()
+        npm_dict = {2: 'Green', 1: 'Isosbestic', 4: 'Red'}
         
-        data_dict = {'time_iso': file.iloc[self.start_idx + 2 : self.stop_idx : 3,
-                                           time_col].values.tolist(),
-                     'time_green': file.iloc[self.start_idx : self.stop_idx : 3,
-                                             time_col].values.tolist(),
-                     'time_red': file.iloc[self.start_idx + 1 : self.stop_idx : 3,
-                                           time_col].values.tolist(),
-                     'Raw_Isosbestic': file.iloc[self.start_idx + 2 : self.stop_idx : 3,
-                                                 green_col].values.tolist(),
-                     'Raw_Green': file.iloc[self.start_idx : self.stop_idx : 3,
-                                            green_col].values.tolist(),
-                     'green_red': file.iloc[self.start_idx + 1 : self.stop_idx : 3,
-                                            green_col].values.tolist(),
-                     'red_iso': file.iloc[self.start_idx + 2 : self.stop_idx : 3,
-                                          red_col].values.tolist(),     
-                     'red_green': file.iloc[self.start_idx : self.stop_idx : 3,
-                                            red_col].values.tolist(),
-                     'Raw_Red': file.iloc[self.start_idx + 1 : self.stop_idx : 3,
-                                          red_col].values.tolist()
-        }
-        dict_items = data_dict.items()
-        self.fpho_data_dict = data_dict
+        for color in led_states:
+            data_dict['time_' + npm_dict[color]] =  time_slice[
+                time_slice['LedState'] == color]['Timestamp'].values.tolist()
+                
+            if green_ROI: 
+                if color == 1 or color == 2:
+                    data_dict['Raw_' + npm_dict[color]] = time_slice[
+                        time_slice['LedState'] == color].iloc[:, green_col].values.tolist()
+                    self.channels.add('Raw_' + npm_dict[color])
+            
+            if red_ROI: 
+                if color == 4:
+                    data_dict['Raw_' + npm_dict[color]] = time_slice[
+                        time_slice['LedState'] == color].iloc[:, red_col].values.tolist() 
+                    self.channels.add('Raw_' + npm_dict[color])
+            
+        shortest_list = min([len(data_dict[ls]) for ls in data_dict])
+        
+        for ls in data_dict:
+            data_dict[ls] = data_dict[ls][:shortest_list-1]
+        
         self.fpho_data_df = pd.DataFrame.from_dict(data_dict)
         
     ##Helper Functions   
@@ -287,53 +284,21 @@ class fiberObj:
 
     #Signal Trace function
     def raw_signal_trace(self):
-        fig = make_subplots(rows = 1, cols = 2, shared_xaxes = True,
+        fig = make_subplots(rows = 1, cols = 1, shared_xaxes = True,
                             vertical_spacing = 0.02, x_title = "Time (s)",
                             y_title = "Fluorescence")
-        fig.add_trace(
-            go.Scatter(
-                x = self.fpho_data_df['time_iso'],
-                y = self.fpho_data_df['Raw_Isosbestic'],
-                mode = "lines",
-                line = go.scatter.Line(color = 'Cyan'),
-                name = 'Isosbestic in green',
-                text = 'Isosbestic in green',
-                showlegend = True
-            ), row = 1, col = 1
-        )
-        fig.add_trace(
-            go.Scatter(
-                x = self.fpho_data_df['time_green'],
-                y = self.fpho_data_df['Raw_Green'],
-                mode = "lines",
-                line = go.scatter.Line(color = "rgba(0, 255, 0, 0.75)"),
-                name = 'Green',
-                text = 'Green',
-                showlegend = True),
-                row = 1, col = 1
-                )
-        fig.add_trace(
-            go.Scatter(
-                x = self.fpho_data_df['time_iso'],
-                y = self.fpho_data_df['red_iso'],
-                mode = "lines",
-                line = go.scatter.Line(color = "Violet"),
-                name = 'Isosbestic in red',
-                text = 'Isosbestic in red',
-                showlegend = True),
-                row = 1, col = 2
-                )
-        fig.add_trace(
-            go.Scatter(
-                x = self.fpho_data_df['time_red'],
-                y = self.fpho_data_df['Raw_Red'],
-                mode = "lines",
-                line = go.scatter.Line(color = "rgba(255, 0, 0, 0.75)"),
-                name = 'Red',
-                text = 'Red',
-                showlegend = True),
-                row = 1, col = 2
-                )
+        for channel in self.channels:
+            fig.add_trace(
+                go.Scatter(
+                    x = self.fpho_data_df['time' + channel[3:]],
+                    y = self.fpho_data_df[channel],
+                    mode = "lines",
+                    line = go.scatter.Line(color = self.color_dict[channel]),
+                    name = channel,
+                    text = channel,
+                    showlegend = True
+                ), row = 1, col = 1
+            )
         fig.update_layout(
             title = self.obj_name + ' Raw Data'
         )
@@ -365,7 +330,7 @@ class fiberObj:
         # Channels={'Green':'Raw_Green', 'Red':'Raw_Red', 'Isosbestic':'Raw_Isosbestic'}
         #times = {'Green':'time_green', 'Red':'time_red', 'Isosbestic':'time_iso'}   
         # time = self.fpho_data_df[times[signal]]
-        time = self.fpho_data_df['time_green']
+        time = self.fpho_data_df['time_Green']
         sig = self.fpho_data_df[signal]
         ref = self.fpho_data_df[reference]
         popt, pcov = curve_fit(self.fit_exp, time, sig, p0 = (1.0, 0, 1.0, 0, 0),
@@ -596,15 +561,15 @@ class fiberObj:
             self.fpho_data_df[beh] = ' '
             while j < len(idx_of_beh):
                 if BORIS_data.loc[(idx_of_beh[j]), 'Status']=='POINT': 
-                    point_idx=self.fpho_data_df['time_green'].searchsorted(
+                    point_idx=self.fpho_data_df['time_Green'].searchsorted(
                         BORIS_data.loc[idx_of_beh[j],'Time'])
                     self.fpho_data_df.loc[point_idx, beh]='S'
                     j = j + 1
                 elif (BORIS_data.loc[(idx_of_beh[j]), 'Status']=='START' and 
                       BORIS_data.loc[(idx_of_beh[j + 1]), 'Status']=='STOP'):
-                    startIdx = self.fpho_data_df['time_green'].searchsorted(
+                    startIdx = self.fpho_data_df['time_Green'].searchsorted(
                         BORIS_data.loc[idx_of_beh[j],'Time'])
-                    endIdx = self.fpho_data_df['time_green'].searchsorted(
+                    endIdx = self.fpho_data_df['time_Green'].searchsorted(
                         BORIS_data.loc[idx_of_beh[j + 1],'Time'])
                     self.fpho_data_df.loc[startIdx, beh] = 'S'
                     self.fpho_data_df.loc[startIdx+1 : endIdx-1, beh] = 'O'
@@ -625,7 +590,7 @@ class fiberObj:
         for i, channel in enumerate(channels):
             fig.add_trace(
                 go.Scatter(
-                x = self.fpho_data_df['time_green'],
+                x = self.fpho_data_df['time_Green'],
                 y = self.fpho_data_df[channel],
                 mode = "lines",
                 line = go.scatter.Line(color = "Green"),
@@ -642,8 +607,8 @@ class fiberObj:
                 pattern = re.compile(r'S[O]+E')
                 bouts = pattern.finditer(temp_beh_string)
                 for bout in bouts:
-                    start_time = self.fpho_data_df.at[bout.start(), 'time_green']
-                    end_time = self.fpho_data_df.at[bout.end(), 'time_green']
+                    start_time = self.fpho_data_df.at[bout.start(), 'time_Green']
+                    end_time = self.fpho_data_df.at[bout.end(), 'time_Green']
                     fig.add_vrect(x0 = start_time, x1 = end_time, 
                                 opacity = 0.75,
                                 layer = "below",
@@ -655,7 +620,7 @@ class fiberObj:
                 S = re.compile(r'S')
                 starts = S.finditer(temp_beh_string)
                 for start in starts:
-                    start_time = self.fpho_data_df.at[start.start(), 'time_green']
+                    start_time = self.fpho_data_df.at[start.start(), 'time_Green']
                     fig.add_vline(x = start_time, 
                                 layer = "below",
                                 line_width = 3, 
@@ -685,7 +650,7 @@ class fiberObj:
         
         # Finds all times where behavior starts, turns into list
         beh_times=list(self.fpho_data_df[(
-            self.fpho_data_df[beh]=='S')]['time_green'])
+            self.fpho_data_df[beh]=='S')]['time_Green'])
         # Initialize figure
         fig = make_subplots(rows = 1, cols = 2,
                             subplot_titles = ('Full trace with events',
@@ -698,7 +663,7 @@ class fiberObj:
             go.Scatter(
             # X = all times
             # Y = all values at that channel
-            x = self.fpho_data_df['time_green'],
+            x = self.fpho_data_df['time_Green'],
             y = self.fpho_data_df[channel],
             mode = "lines",
             line = go.scatter.Line(color="Green"),
@@ -720,9 +685,9 @@ class fiberObj:
             # idx = np.where((start_event_time > baseline[0]) & (start_event_time < baseline[1]))
             # Find baseline start/end index
             # Start event time is the first occurrence of event, this option will be for a baseline at the beginning of the trace
-            base_start_idx = self.fpho_data_df['time_green'].searchsorted(
+            base_start_idx = self.fpho_data_df['time_Green'].searchsorted(
                 baseline[0])
-            base_end_idx = self.fpho_data_df['time_green'].searchsorted(
+            base_end_idx = self.fpho_data_df['time_Green'].searchsorted(
                 baseline[1])
             # Calc mean and std for values within window
             base_mean = np.nanmean(self.fpho_data_df.loc[
@@ -734,11 +699,11 @@ class fiberObj:
             # Indexes for finding baseline at end of sample
             start = max(baseline)
             end = min(baseline)
-            end_time = self.fpho_data_df['time_green'].iloc[-1]
+            end_time = self.fpho_data_df['time_Green'].iloc[-1]
             print(end_time)
-            base_start_idx = self.fpho_data_df['time_green'].searchsorted(
+            base_start_idx = self.fpho_data_df['time_Green'].searchsorted(
                 end_time - start)
-            base_end_idx = self.fpho_data_df['time_green'].searchsorted(
+            base_end_idx = self.fpho_data_df['time_Green'].searchsorted(
                 end_time - end)
             # Calculates mean and standard deviation
             base_mean = np.nanmean(self.fpho_data_df.loc[
@@ -754,9 +719,9 @@ class fiberObj:
             if base_option and base_option[0] == 'Before Events':
                 start = max(baseline)
                 end = min(baseline)
-                base_start_idx = self.fpho_data_df['time_green'].searchsorted(
+                base_start_idx = self.fpho_data_df['time_Green'].searchsorted(
                     time - start)
-                base_end_idx = self.fpho_data_df['time_green'].searchsorted(
+                base_end_idx = self.fpho_data_df['time_Green'].searchsorted(
                     time - end)
                 base_mean = np.nanmean(self.fpho_data_df.loc[
                     base_start_idx:base_end_idx, channel])
@@ -766,16 +731,16 @@ class fiberObj:
             # time - time_Before = start_time for this event trace, time is the actual event start, time before is secs input before event start
             # Finds time in our data that is closest to time - time_before
             # start_idx = index of that time
-            start_idx=self.fpho_data_df['time_green'].searchsorted(
+            start_idx=self.fpho_data_df['time_Green'].searchsorted(
                 time - time_before)
             # time + time_after = end_time for this event trace, time is the actual event start, time after is secs input after event start
             # end_idx = index of that time
-            end_idx = self.fpho_data_df['time_green'].searchsorted(
+            end_idx = self.fpho_data_df['time_Green'].searchsorted(
                 time + time_after)
             
             # Edge case: If indexes are within bounds
             if (start_idx > 0 and 
-                end_idx < len(self.fpho_data_df['time_green']) - 1):
+                end_idx < len(self.fpho_data_df['time_Green']) - 1):
                 # Finds usable events
                 n_events = n_events + 1
                 # Tempy stores channel values for this event trace
@@ -792,7 +757,7 @@ class fiberObj:
 
                 if show_first == -1 or i in np.arange(show_first, show_last, show_every):
                     # Times for this event trace
-                    x = self.fpho_data_df.loc[start_idx : end_idx, 'time_green']
+                    x = self.fpho_data_df.loc[start_idx : end_idx, 'time_Green']
                     # Trace color (First event blue, last event red)
                     trace_color = 'rgb(' + str(
                         int((i+1) * 255/(len(beh_times)))) + ', 0, 255)'
@@ -881,7 +846,7 @@ class fiberObj:
 
         sig1 = self.fpho_data_df[channel]
         sig2 = obj2.fpho_data_df[channel]
-        time = self.fpho_data_df['time_green']
+        time = self.fpho_data_df['time_Green']
 
         #sig1smooth = ss.zscore(uniform_filter1d(sig1, size=i))
         #sig2smooth = ss.zscore(uniform_filter1d(sig2, size=i))
@@ -968,7 +933,7 @@ class fiberObj:
         behaviorSlice1 = self.fpho_data_df[self.fpho_data_df[beh] != ' ']
         behaviorSlice2 = obj2.fpho_data_df[self.fpho_data_df[beh] != ' ']
 
-        time = behaviorSlice1['time_green']
+        time = behaviorSlice1['time_Green']
         sig1 = behaviorSlice1[channel]
         sig2 = behaviorSlice2[channel]
         fig = make_subplots(rows = 1, cols = 2)
