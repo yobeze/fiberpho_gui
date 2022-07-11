@@ -35,8 +35,8 @@ audio_path = "/Users/yobae/Desktop/CS Stuff/fiberobj_panel/Yobe_GUI/fiberpho_gui
 
 audio_chime = audio_path.replace(" ", "%20")
 
-pn.extension('plotly', 'terminal', notifications = True, sizing_mode = "stretch_width", 
-             loading_color = '#00aa41')
+pn.extension('plotly', 'terminal', notifications = True, 
+             sizing_mode = 'stretch_width')
 
 #Dictionary of fiber objects
 fiber_objs = {}
@@ -81,7 +81,7 @@ def run_init_fiberobj(event = None):
 
     try:
         if df.empty:
-            print("Dataframe is empty, cannot read file")
+            print("Dataframe is empty/Cannot read file")
             pn.state.notifications.error('Error: Please check logger for more info', duration = 4000)
             return
         #Add to dict if object name does not already exist
@@ -133,8 +133,9 @@ def run_upload_fiberobj(event = None):
                     temp = pickle.load(file)
                 except EOFError:
                     break
+                    
         fiber_objs[temp.obj_name] = temp
-
+        
         if temp.beh_filename: # Check for if the pickled object has a behavior file
             fiber_data.loc[temp.obj_name] = ([temp.fiber_num, temp.animal_num,
                                               temp.exp_date, temp.exp_start_time,
@@ -490,11 +491,6 @@ def run_convert_lick(event):
     else:
         print('Error reading file')
         
-            
-# Accent Colors
-ACCENT_COLOR_HEAD = "#128CB6"
-ACCENT_COLOR_BG = "#D9F3F3"
-
 
 
 # ----------------------------------------------------- # 
@@ -517,29 +513,31 @@ stream_handler.setLevel(logging.DEBUG)
 logger.addHandler(stream_handler)
 
 #Buttons
-clear_logs = pn.widgets.Button(name = 'Clear Logs', button_type = 'danger', height = 30, width = 40, sizing_mode = 'fixed', align = 'end')
+clear_logs = pn.widgets.Button(name = 'Clear Logs', button_type = 'danger', 
+                               height = 30, width = 40, sizing_mode = 'fixed', align = 'end')
+# Doesn't work rn for some reason
 clear_logs.on_click(terminal.clear())
 
 logger_info = pn.pane.Markdown("""
                                 ##Logger
                             """, height = 40, width = 60)
 
-log_card = pn.Card(pn.Row(logger_info, clear_logs), terminal, title = 'Logger', 
-                   background = 'WhiteSmoke', width = 600, collapsed = False)
+log_card = pn.Card(pn.Row(logger_info, clear_logs), terminal, title = 'Logs', 
+                   background = 'WhiteSmoke', width = 600, collapsed = True)
 
 # ----------------------------------------------------- # 
 # Init fiberobj Widget
 
 #Input variables
 input_1 = pn.widgets.TextInput(name = 'Object Name', width = 80, placeholder = 'String')
-input_2 = pn.widgets.IntInput(name = 'Fiber Number', start = 1, end = 2, width = 80, placeholder = 'Int')
-input_3 = pn.widgets.IntInput(name = 'Animal Number', start = 1, end = 2, width = 80, placeholder = 'Int')
+input_2 = pn.widgets.IntInput(name = 'Fiber Number', start = 1, end = 16, width = 80, placeholder = '1-16')
+input_3 = pn.widgets.IntInput(name = 'Animal Number', start = 1, end = 16, width = 80, placeholder = '1-16')
 input_4 = pn.widgets.TextInput(name = 'Exp Date', width = 80, placeholder = 'Date')
 input_5 = pn.widgets.TextInput(name = 'Exp Time', width = 80, placeholder = 'Time')
 input_6 = pn.widgets.IntInput(name = 'Exclude time from beginning of recording',
-                               width = 90, placeholder = 'Seconds', value = -1) #looking for better name
-input_7 = pn.widgets.IntInput(name = 'Stop time from beginning of recording',
                                width = 90, placeholder = 'Seconds', value = 0) #looking for better name
+input_7 = pn.widgets.IntInput(name = 'Stop time from beginning of recording',
+                               width = 90, placeholder = 'Seconds', value = -1) #looking for better name
 input_col = pn.Column(input_1, input_2, input_3, input_4, input_5, input_6, input_7)
 fpho_input = pn.widgets.FileInput(name = 'Upload FiberPho Data', accept = '.csv') #File input parameter
 
@@ -548,7 +546,7 @@ upload_button = pn.widgets.Button(name = 'Create Object', button_type = 'primary
 upload_button.on_click(run_init_fiberobj) #Button action
 
 #Box
-init_obj_box = pn.WidgetBox('##Create Object', fpho_input, input_col, upload_button)
+init_obj_box = pn.WidgetBox('# Create Object', fpho_input, input_col, upload_button)
 
 # ----------------------------------------------------- # 
 # ----------------------------------------------------- # 
@@ -558,7 +556,9 @@ init_obj_box = pn.WidgetBox('##Create Object', fpho_input, input_col, upload_but
 upload_pkl_selecta = pn.widgets.FileInput(name = 'Upload Saved Fiber Objects', accept = '.pickle', multiple = True) #File input parameter
 
 #Buttons
-upload_pkl_btn = pn.widgets.Button(name = 'Upload Object', button_type = 'primary', width = 400, sizing_mode = 'stretch_width', align = 'end')
+upload_pkl_btn = pn.widgets.Button(name = 'Upload Object', 
+                                   button_type = 'primary', width = 400, 
+                                   sizing_mode = 'stretch_width', align = 'end')
 upload_pkl_btn.on_click(run_upload_fiberobj) #Button action
 
 #Box
@@ -638,9 +638,11 @@ clear_norm = pn.widgets.Button(name = 'Clear Plots \u274c', button_type = 'dange
 clear_norm.on_click(clear_plots)
 
 norm_info = pn.pane.Markdown("""
-                                    - Normalizes the signal and reference trace to a biexponential, linearly fits the normalized reference to the normalized signal. <br>
-                                    Stores all fitted traces in the dataframe and plots them for examination.
-                                    """, width = 200)
+                                    - Normalizes the signal and reference trace 
+                                    to a biexponential, linearly fits the normalized 
+                                    reference to the normalized signal. <br>
+                                    Stores all fitted traces in the dataframe and 
+                                    plots them for examination.""", width = 200)
 #Box
 norm_options = pn.Column(norm_selecta, update_norm_options_btn, pick_signal, pick_reference, norm_sig_btn)
 norm_sig_widget = pn.WidgetBox(norm_info, norm_options)
@@ -664,13 +666,15 @@ upload_lick_btn = pn.widgets.Button(name = 'Upload', button_type = 'primary', wi
 upload_lick_btn.on_click(run_convert_lick)
 
 upload_beh_info = pn.pane.Markdown("""
-                                        - Imports user uploaded behavior data and reads dataframe to update and include subject, behavior, and status columns to the dataframe. <br>
-                                        **You must upload a valid .csv here to perform any behavior analysis (skip otherwise)**
+                                        - Imports user uploaded behavior data and reads
+                                        dataframe to update and include subject, behavior,
+                                        and status columns to the dataframe.
                                     """, width = 200)
 
-convert_info = pn.pane.Markdown(""" - Upload lickometer data to be converted to behavior file formatting <br>
-                                    - Returns downloadable csv after conversion has been completed
-                                """, width = 200)
+convert_info = pn.pane.Markdown(""" - Upload lickometer data to be converted 
+                                to behavior file formatting <br> - Returns downloadable
+                                csv after conversion has been completed""",
+                                width = 200)
 
 
 #Box
@@ -679,7 +683,8 @@ lick_options = pn.Column(convert_info, lick_input, upload_lick_btn)
 beh_tabs = pn.Tabs(('Behavior Import', behav_options), ('Lick to Boris', lick_options))
 
 upload_beh_widget = pn.WidgetBox(beh_tabs, height = 270)
-upload_beh_card = pn.Card(upload_beh_widget, title = 'Import Behavior', background = 'WhiteSmoke', collapsed = False)
+upload_beh_card = pn.Card(upload_beh_widget, title = 'Import Behavior', 
+                          background = 'WhiteSmoke', collapsed = False)
 
 
 # ----------------------------------------------------- # 
@@ -830,26 +835,35 @@ beh_corr_card = pn.Card(beh_corr_widget, clear_beh_corr, title = 'Behavior Speci
 #Object info widget
 
 #Table
-info_table = pn.widgets.Tabulator(fiber_data, height = 270, page_size = 10, disabled = True)
-obj_info_card = pn.Card(info_table, title = "Display Object Attributes", background = 'WhiteSmoke', collapsed = False)
+info_table = pn.widgets.Tabulator(fiber_data, height = 270, 
+                                  page_size = 10, disabled = True)
+
+obj_info_card = pn.Card(info_table, title = "Display Object Attributes", 
+                        background = 'WhiteSmoke', collapsed = False)
 
 # ----------------------------------------------------- # 
+# Accent Colors
+ACCENT_COLOR_HEAD = "#D9F3F3"
+ACCENT_COLOR_BG = "#128CB6"
 
 # Material Template
-material = pn.template.MaterialTemplate(site = 'Donaldson Lab: Fiber Photometry', title = 'FiberPho GUI',
-                                        header_color = ACCENT_COLOR_BG, header_background = ACCENT_COLOR_HEAD
+material = pn.template.MaterialTemplate(site = 'Donaldson Lab: Fiber Photometry', 
+                                        title = 'FiberPho GUI',
+                                        header_color = ACCENT_COLOR_HEAD, 
+                                        header_background = ACCENT_COLOR_BG
                                        )
 
 
 # Append widgets to Material Template
-material.sidebar.append(pn.pane.Markdown("** Upload your photometry data *(.csv)* ** and set your fiber object's **attributes** here"))
+material.sidebar.append(pn.pane.Markdown(
+    "** Upload your photometry data *(.csv)* ** and set your fiber object's **attributes** here"))
 material.sidebar.append(init_obj_box)
 material.sidebar.append(load_obj_box)
 material.sidebar.append(save_obj_box)
 material.sidebar.append(delete_obj_box)
+
 material.main.append(
-    pn.Row(upload_beh_card, obj_info_card
-          )
+    pn.Row(upload_beh_card, obj_info_card)
 )
 material.main.append(plot_raw_card)
 material.main.append(norm_sig_card)
