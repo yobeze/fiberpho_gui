@@ -966,6 +966,9 @@ class fiberObj:
             showlegend = False),
             row = 1, col = 1
             )
+
+        [r, p] = ss.pearsonr(sig1, sig2)
+
         fig.update_layout(
                 title = 'Correlation between ' + self.obj_name + ' and ' 
                   + obj2.obj_name + ' during ' + beh + ' is, ' + str(r) + ' p = ' + str(p)
@@ -975,7 +978,6 @@ class fiberObj:
         fig.update_xaxes(title_text = 'Time (s)', col = 1, row = 1)
         fig.update_yaxes(title_text = 'Zscore', col = 1, row = 1)
 
-        [r, p] = ss.pearsonr(sig1, sig2)
         beg = ss.pearsonr(
             sig1[0:int(len(sig1)*(1/3))], 
             sig2[0:int(len(sig1)*(1/3))]
@@ -989,9 +991,8 @@ class fiberObj:
             sig2[int(len(sig1)*(2/3)):]
             )
 
-        print(r, p)
-        self.beh_corr_results[channel].loc[obj2.obj_name, beh]=(r,p)  
-        obj2.beh_corr_results[channel].loc[self.obj_name, beh]=(r,p)
+        self.beh_corr_results[channel].loc[obj2.obj_name, beh] = (r, p)  
+        obj2.beh_corr_results[channel].loc[self.obj_name, beh] = (r, p)
         
         return fig
     
