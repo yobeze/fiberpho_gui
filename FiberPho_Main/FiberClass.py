@@ -967,7 +967,7 @@ class fiberObj:
             row = 1, col = 1
             )
 
-        [r, p] = ss.pearsonr(sig1, sig2)
+        [r, p] = ss.pearsonr(sig1, sig2) # 'r' and 'p' were both being referenced before assignment
 
         fig.update_layout(
                 title = 'Correlation between ' + self.obj_name + ' and ' 
