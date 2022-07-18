@@ -649,7 +649,7 @@ class fiberObj:
     z-score and SEM"""
         
         # Finds all times where behavior starts, turns into list
-        beh_times=list(self.fpho_data_df[(
+        beh_times = list(self.fpho_data_df[(
             self.fpho_data_df[beh]=='S')]['time_Green'])
         # Initialize figure
         fig = make_subplots(rows = 1, cols = 2,
@@ -672,9 +672,9 @@ class fiberObj:
             row = 1, col =1
             )
 
-        # Initializes ...
+        # Initialize array of zscore sums
         Zscore_sum = []
-        # Initializes events counter at 0
+        # Initialize events counter to 0
         n_events = 0
         
         if not base_option:
@@ -731,7 +731,7 @@ class fiberObj:
             # time - time_Before = start_time for this event trace, time is the actual event start, time before is secs input before event start
             # Finds time in our data that is closest to time - time_before
             # start_idx = index of that time
-            start_idx=self.fpho_data_df['time_Green'].searchsorted(
+            start_idx = self.fpho_data_df['time_Green'].searchsorted(
                 time - time_before)
             # time + time_after = end_time for this event trace, time is the actual event start, time after is secs input after event start
             # end_idx = index of that time
@@ -770,7 +770,7 @@ class fiberObj:
                         # Times starting at user input start time, ending at user input end time
                         x = x - time,
                         # Y = Zscore of event trace
-                        # y=ss.zscore(self.fpho_data_df.loc[start_idx:end_idx,channel]),
+                        # y = ss.zscore(self.fpho_data_df.loc[start_idx:end_idx,channel]),
                         y = this_Zscore, 
                         mode = "lines",
                         line = dict(color = trace_color, width = 2),
@@ -786,11 +786,11 @@ class fiberObj:
             # Scatter plot
             go.Scatter( 
             # Times for baseline window
-            x = np.linspace(-time_before, time_after, num=len(x)),
+            x = np.linspace(-time_before, time_after, num = len(x)),
             # Y = Zscore average of all event traces
             y = [i / n_events for i in Zscore_sum],
-            mode="lines",
-            line=dict(color = "Black", width = 5),
+            mode = "lines",
+            line = dict(color = "Black", width = 5),
             name = 'average',
             text = 'average',
             showlegend = True),
@@ -801,12 +801,12 @@ class fiberObj:
             title = 'Z-score of ' + beh + ' for ' 
                     + self.obj_name + ' in channel ' + channel
             )
-        
+        print(len(Zscore_sum))
         return fig
         
         
     # Zscore calc helper
-    def zscore(self, ls, mean=None, std=None):
+    def zscore(self, ls, mean = None, std = None):
         # Default Params, no arguments passed
         if mean is None and std is None:
             mean = np.nanmean(ls)
