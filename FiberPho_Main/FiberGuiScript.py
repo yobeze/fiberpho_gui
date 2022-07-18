@@ -123,10 +123,11 @@ def run_init_fiberobj(event = None):
         return
 
 
+
 # Upload pickled object files
 def run_upload_fiberobj(event = None):
+    upload = upload_pkl_selecta.filename
     try:
-        upload = upload_pkl_selecta.filename
         for filename in upload:
             with io.open (filename, 'rb') as file:
                 try:
@@ -134,18 +135,18 @@ def run_upload_fiberobj(event = None):
                 except EOFError:
                     break
                     
-        fiber_objs[temp.obj_name] = temp
+            fiber_objs[temp.obj_name] = temp
         
-        if temp.beh_filename: # Check for if the pickled object has a behavior file
-            fiber_data.loc[temp.obj_name] = ([temp.fiber_num, temp.animal_num,
-                                              temp.exp_date, temp.exp_start_time,
-                                              temp.file_name, temp.beh_filename])
-            info_table.value = fiber_data
-        else:
-            fiber_data.loc[temp.obj_name] = ([temp.fiber_num, temp.animal_num,
-                                              temp.exp_date, temp.exp_start_time,
-                                              temp.file_name, 'NaN'])
-            info_table.value = fiber_data
+            if temp.beh_filename: # Check for if the pickled object has a behavior file
+                fiber_data.loc[temp.obj_name] = ([temp.fiber_num, temp.animal_num,
+                                                  temp.exp_date, temp.exp_start_time,
+                                                  temp.file_name, temp.beh_filename])
+                info_table.value = fiber_data
+            else:
+                fiber_data.loc[temp.obj_name] = ([temp.fiber_num, temp.animal_num,
+                                                  temp.exp_date, temp.exp_start_time,
+                                                  temp.file_name, 'NaN'])
+                info_table.value = fiber_data
 
         existing_objs = fiber_objs
         # Updates all cards with new objects
@@ -169,7 +170,7 @@ def run_upload_fiberobj(event = None):
         
 # Saves selected object to pickle file
 def run_delete_fiberobj(event = None):
-    obj = delete_obj_selecta.value
+    # obj = delete_obj_selecta.value
     try:
         for obj in delete_obj_selecta.value:
             pn.state.notifications.warning('Deleting ' + obj + ' object!', duration = 4000)
@@ -196,7 +197,7 @@ def run_delete_fiberobj(event = None):
 
 # Saves selected object to pickle file
 def run_save_fiberobj(event = None):
-    obj = save_obj_selecta.value
+    # obj = save_obj_selecta.value
     try:
         for obj in save_obj_selecta.value:
             temp = fiber_objs[obj]

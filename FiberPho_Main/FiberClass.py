@@ -772,12 +772,12 @@ class fiberObj:
                         # Y = Zscore of event trace
                         # y=ss.zscore(self.fpho_data_df.loc[start_idx:end_idx,channel]),
                         y = this_Zscore, 
-                        mode="lines",
-                        line=dict(color = trace_color, width = 2),
+                        mode = "lines",
+                        line = dict(color = trace_color, width = 2),
                         name = 'Event:' + str(i),
                         text = 'Event:' + str(i),
                         showlegend=True), 
-                        row=1, col=2
+                        row = 1, col = 2
                         )
                 
         fig.add_vline(x = 0, line_dash = "dot", row = 1, col = 2)
@@ -797,12 +797,11 @@ class fiberObj:
             row = 1, col = 2
             )
 
-            
-            
         fig.update_layout(
             title = 'Z-score of ' + beh + ' for ' 
                     + self.obj_name + ' in channel ' + channel
             )
+        
         return fig
         
         
