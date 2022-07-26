@@ -517,14 +517,14 @@ logger.addHandler(stream_handler)
 clear_logs = pn.widgets.Button(name = 'Clear Logs', button_type = 'danger', 
                                height = 30, width = 40, sizing_mode = 'fixed', align = 'end')
 # Doesn't work rn for some reason
-clear_logs.on_click(terminal.clear())
+clear_logs.on_click(terminal.clear)
 
 logger_info = pn.pane.Markdown("""
                                 ##Logger
                             """, height = 40, width = 60)
 
 log_card = pn.Card(pn.Row(logger_info, clear_logs), terminal, title = 'Logs', 
-                   background = 'WhiteSmoke', width = 600, collapsed = True)
+                   background = 'WhiteSmoke', width = 600, collapsed = False, collapsible = False)
 
 # ----------------------------------------------------- # 
 # Init fiberobj Widget
@@ -743,6 +743,7 @@ z_score_note = pn.pane.Markdown("""
                                    z-score computation method. <br>
                                    - The parameters are in seconds. <br>
                                    - Please check where you would like your baseline window <br>
+                                   - **ONLY CHECK ONE BOX** <br>
                                    """, width = 200)
 zscore_info = pn.pane.Markdown("""
                                     - Takes a dataframe and creates a plot of z-scores for

@@ -801,6 +801,7 @@ class fiberObj:
             title = 'Z-score of ' + beh + ' for ' 
                     + self.obj_name + ' in channel ' + channel
             )
+        # zscore_len = len(Zscore_sum)
         print(len(Zscore_sum))
         return fig
         
@@ -892,8 +893,6 @@ class fiberObj:
             )
         return fig
         
-        # except:
-        #     log_msg = 
 
     
     #return the pearsons 
