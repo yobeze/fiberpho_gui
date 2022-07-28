@@ -26,7 +26,7 @@ def lick_to_boris(lick_file):
     diffs = np.diff(trimmed.index)
 
     for i, v in enumerate(diffs):
-        if v > 1:
+        if v > 500:
             stops.append((trimmed.iloc[i]['Time'] 
                           - lick_file.iloc[0]['Time']) / 1000)
             if i+1 < len(diffs):
