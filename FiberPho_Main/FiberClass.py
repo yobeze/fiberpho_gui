@@ -821,32 +821,33 @@ class fiberObj:
         
         
          #return the pearsons correlation coefficient and r value between 2 full channels and plots the signals overlaid and their scatter plot
-    def within_trial_pearsons(self, obj2, channel):
+    def pearsons_correlation(self, obj2, channel1, channel2, start, end):
         # try: 
-        if not channel in self.full_corr_results.columns:
-            self.full_corr_results.loc[:, channel] = [
-                (float("NaN"), float("NaN")) 
-                for i in range(len(self.full_corr_results.index))
-                ]
-        if not channel in obj2.full_corr_results.columns:
-            obj2.full_corr_results.loc[:, channel] = [
-                (float("NaN"), float("NaN"))
-                for i in range(len(obj2.full_corr_results.index))
-                ]
-        if not obj2.obj_name in self.full_corr_results:
-            self.full_corr_results.loc[obj2.obj_name, :] = [
-                (float("NaN"), float("NaN")) 
-                for i in range(len(obj2.full_corr_results.columns))
-                ]
-        if not self.obj_name in obj2.full_corr_results:
-            obj2.full_corr_results.loc[self.obj_name, :] = [
-                (float("NaN"), float("NaN")) 
-                for i in range(len(self.full_corr_results.columns))
-                ]
+        # if not channel1 in self.full_corr_results.columns:
+        #     self.full_corr_results.loc[:, channel1] = [
+        #         (float("NaN"), float("NaN")) 
+        #         for i in range(len(self.full_corr_results.index))
+        #         ]
+        # if not channel2 in obj2.full_corr_results.columns:
+        #     obj2.full_corr_results.loc[:, channel2] = [
+        #         (float("NaN"), float("NaN"))
+        #         for i in range(len(obj2.full_corr_results.index))
+        #         ]
+        # if not obj2.obj_name in self.full_corr_results:
+        #     self.full_corr_results.loc[obj2.obj_name, :] = [
+        #         (float("NaN"), float("NaN")) 
+        #         for i in range(len(obj2.full_corr_results.columns))
+        #         ]
+        # if not self.obj_name in obj2.full_corr_results:
+        #     obj2.full_corr_results.loc[self.obj_name, :] = [
+        #         (float("NaN"), float("NaN")) 
+        #         for i in range(len(self.full_corr_results.columns))
+        #         ]
 
-        sig1 = self.fpho_data_df[channel]
-        sig2 = obj2.fpho_data_df[channel]
+        sig1 = self.fpho_data_df[channel1]
+        sig2 = obj2.fpho_data_df[channel2]
         time = self.fpho_data_df['time_Green']
+        print(type(sig1))
 
         #sig1smooth = ss.zscore(uniform_filter1d(sig1, size=i))
         #sig2smooth = ss.zscore(uniform_filter1d(sig2, size=i))
@@ -884,8 +885,8 @@ class fiberObj:
 
         #calculates the pearsons R  
         [r, p] = ss.pearsonr(sig1, sig2)
-        self.full_corr_results[obj2.obj_name, channel] = (r, p)
-        obj2.full_corr_results[self.obj_name, channel] = (r, p)
+#         self.full_corr_results[obj2.obj_name, channel1] = (r, p)
+#         obj2.full_corr_results[self.obj_name, channel2] = (r, p)
 
         fig.update_layout(
             title = 'Correlation between ' + self.obj_name + ' and ' 
