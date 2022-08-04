@@ -178,7 +178,11 @@ class fiberObj:
         self.full_corr_results = pd.DataFrame([], index = [self.obj_name])
         self.beh_corr_results = {}
         self.color_dict = {'Raw_Green' : 'LawnGreen', 'Raw_Red': 'Red', 'Raw_Isosbestic': 'Cyan', 'Green_Normalized': 'MediumSeaGreen', 'Red_Normalized': 'Dark_Red', 'Isosbestic_Normalized':'DeepSkyBlue'}
+
         file['Timestamp'] = (file['Timestamp'] - file['Timestamp'][0])
+        
+        self.frame_rate = (file['Timestamp'].iloc[-1]
+                            - file['Timestamp'][0])/len(file['Timestamp'])
         
         if start_time == 0:
             self.start_idx = 0
@@ -240,6 +244,7 @@ class fiberObj:
         
         self.fpho_data_df = pd.DataFrame.from_dict(data_dict)
         
+    
     ##Helper Functions   
     def fit_exp(self, values, a, b, c, d, e):
         """Transforms data into an exponential function
@@ -821,7 +826,7 @@ class fiberObj:
         
         
          #return the pearsons correlation coefficient and r value between 2 full channels and plots the signals overlaid and their scatter plot
-    def pearsons_correlation(self, obj2, channel1, channel2, start, end):
+    def pearsons_correlation(self, obj2, channel1, channel2, start_time, end_time):
         # try: 
         # if not channel1 in self.full_corr_results.columns:
         #     self.full_corr_results.loc[:, channel1] = [
@@ -843,11 +848,38 @@ class fiberObj:
         #         (float("NaN"), float("NaN")) 
         #         for i in range(len(self.full_corr_results.columns))
         #         ]
+        
+        #find start
+        if np.round(self.frame_rate) != np.round(self.frame_rate):
+            return('These traces have different frame rates\n')
+        
+        start_idx1 = np.searchsorted(self.fpho_data_df['time_Green'], start_time)
+        start_idx2 = np.searchsorted(obj2.fpho_data_df['time_Green'], start_time)
 
-        sig1 = self.fpho_data_df[channel1]
-        sig2 = obj2.fpho_data_df[channel2]
-        time = self.fpho_data_df['time_Green']
-        print(type(sig1))
+        #find end
+        if end_time == -1:
+            end_idx1 = len(self.fpho_data_df['time_Green'])-1
+            end_idx2 = len(obj2 .fpho_data_df['time_Green'])-1
+        else:
+            end_idx1 = np.searchsorted(self.fpho_data_df['time_Green'], end_time)-1
+            end_idx2 = np.searchsorted(obj2.fpho_data_df['time_Green'], end_time) -1 
+
+        if start_time - self.fpho_data_df['time_Green'][start_idx1] < -1/self.frame_rate:
+            return('Trace 1 starts at ' + str(np.round(self.fpho_data_df['time_Green'][start_idx1])) + 's after your start time ' + str(start_time) + '\n')
+        if end_time - self.fpho_data_df['time_Green'][end_idx1] > 1/self.frame_rate:
+            return('Trace 1 ends at ' + str(np.round(self.fpho_data_df['time_Green'][end_idx1])) + 's before your end time ' + str(end_time) + 's\n')
+
+        
+        if start_time - obj2.fpho_data_df['time_Green'][start_idx2] < -1/obj2.frame_rate:
+            return('Trace 2 starts at ' + str(np.round(obj2.fpho_data_df['time_Green'][start_idx2])) + 's after your start time ' + str(start_time) + 's\n')
+        if end_time - obj2.fpho_data_df['time_Green'][end_idx2] > 1/obj2.frame_rate:
+            return('Trace 2 ends at ' + str(np.round(obj2.fpho_data_df['time_Green'][end_idx2])) + 's before your end time ' + str(end_time) + 's\n')
+
+        
+        sig1 = self.fpho_data_df.loc[start_idx1:end_idx1, channel1]
+        sig2 = obj2.fpho_data_df.loc[start_idx2:end_idx2, channel2]
+        time1 = self.fpho_data_df.loc[start_idx1:end_idx1, 'time_Green']
+        time2 = obj2.fpho_data_df.loc[start_idx2:end_idx2, 'time_Green']
 
         #sig1smooth = ss.zscore(uniform_filter1d(sig1, size=i))
         #sig2smooth = ss.zscore(uniform_filter1d(sig2, size=i))
@@ -865,7 +897,7 @@ class fiberObj:
         #plots sig1
         fig.add_trace(
             go.Scattergl(
-            x = time,
+            x = time1,
             y = sig1,
             mode = "lines",
             name = 'sig1',
@@ -875,14 +907,17 @@ class fiberObj:
         #plots sig2
         fig.add_trace(
             go.Scattergl(
-            x = time,
+            x = time2,
             y = sig2,
             mode = "lines",
             name = "sig2",
             showlegend = False),
             row = 1, col = 1
             )
-
+    
+        #make traces the same length for correlation 
+        shorter_len = min(len(sig1), len(sig2)) 
+        print(shorter_len)
         #calculates the pearsons R  
         [r, p] = ss.pearsonr(sig1, sig2)
 #         self.full_corr_results[obj2.obj_name, channel1] = (r, p)
