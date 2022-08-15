@@ -22,12 +22,12 @@ import logging
 import traceback
 from playsound import playsound
 import FiberClass as fc
-# from bokeh.resources  import settings
-# settings.resources = 'inline'
+
 
 '''
 Command to run script:
     panel serve --show FiberGuiScript.py --websocket-max-message-size=104876000 --autoreload
+    Notebook : panel serve FiberGuiNotebook.ipynb --websocket-max-message-size=104876000 --show
 '''
 
 # Workaround for audio bug (does not accept spaces in file path -- may be a local issue)
@@ -175,8 +175,9 @@ def run_delete_fiberobj(event = None):
         for obj in delete_obj_selecta.value:
             pn.state.notifications.warning('Deleting ' + obj + ' object!', duration = 4000)
             del fiber_objs[obj]
-            # fiber_data = fiber_data.drop(labels = obj, axis = 0)
-        
+            del fiber_data[obj]
+            
+        info_table.value = fiber_data
         existing_objs = fiber_objs
         #Updates selectors with new objects
         obj_selecta.options = [*existing_objs]
