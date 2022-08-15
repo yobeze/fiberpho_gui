@@ -175,10 +175,21 @@ class fiberObj:
         self.beh_filename = None
         self.behaviors = set()
         self.channels = set()
-        self.full_corr_results = pd.DataFrame([], index = [self.obj_name])
-        self.beh_corr_results = {}
-        self.color_dict = {'Raw_Green' : 'LawnGreen', 'Raw_Red': 'Red', 'Raw_Isosbestic': 'Cyan', 'Green_Normalized': 'MediumSeaGreen', 'Red_Normalized': 'Dark_Red', 'Isosbestic_Normalized':'DeepSkyBlue'}
-
+        self.color_dict = {'Raw_Green' : 'LawnGreen', 'Raw_Red': 'Red', 'Raw_Isosbestic': 'Cyan',
+                           'Green_Normalized': 'MediumSeaGreen', 'Red_Normalized': 'Dark_Red',
+                           'Isosbestic_Normalized':'DeepSkyBlue'}
+        self.z_score_results = pd.DataFrame(columns = ['Object Name', 'Behavior', 'Channel', 'delta Z_score',
+                                                       'Max Z_score', 'Max Z_score Time',
+                                                       'Min Z_score', 'Min Z_score Time',
+                                                       'Average Z_score Before', 'Average Z_score After',
+                                                       'Time Before', 'Time After', 'Number of events',
+                                                       'Z_score Baseline'])
+        self.correlation_results = pd.DataFrame(columns = ['Object Name', 'Channel', 'Obj2', 'Obj2 Channel',
+                                                           'start_time', 'end_time', 
+                                                           'R Score', 'p score'])
+        self.beh_corr_results = pd.DataFrame(columns = ['Object Name', 'Channel', 'Obj2', 'Obj2 Channel',
+                                                        'Behavior', 'Number of Events' 
+                                                        'R Score', 'p score'])
         file['Timestamp'] = (file['Timestamp'] - file['Timestamp'][0])
         
         self.frame_rate = (file['Timestamp'].iloc[-1]
@@ -312,6 +323,7 @@ class fiberObj:
 
     #Plot fitted exp function
     def normalize_a_signal(self, signal, reference):
+        print('Does this work')
         """Creates a plot normalizing 1 fiber data to an
             exponential of the form y=A*exp(-B*X)+C*exp(-D*x)
 
@@ -576,9 +588,10 @@ class fiberObj:
                         BORIS_data.loc[idx_of_beh[j],'Time'])
                     endIdx = self.fpho_data_df['time_Green'].searchsorted(
                         BORIS_data.loc[idx_of_beh[j + 1],'Time'])
-                    self.fpho_data_df.loc[startIdx, beh] = 'S'
-                    self.fpho_data_df.loc[startIdx+1 : endIdx-1, beh] = 'O'
-                    self.fpho_data_df.loc[endIdx, beh] = 'E'
+                    if endIdx < len(self.fpho_data_df['time_Green']) and startIdx > 0:
+                        self.fpho_data_df.loc[startIdx, beh] = 'S'
+                        self.fpho_data_df.loc[startIdx+1 : endIdx-1, beh] = 'O'
+                        self.fpho_data_df.loc[endIdx, beh] = 'E'
                     j = j + 2
                 else: 
                     print("\nStart and stops for state behavior:" 
@@ -685,6 +698,7 @@ class fiberObj:
         if not base_option:
             base_mean = None
             base_std = None
+            zscore_baseline = 'Each event'
         
         elif base_option[0] == 'Start of Sample':
             # idx = np.where((start_event_time > baseline[0]) & (start_event_time < baseline[1]))
@@ -699,13 +713,14 @@ class fiberObj:
                 base_start_idx:base_end_idx, channel]) 
             base_std = np.nanstd(self.fpho_data_df.loc[
                 base_start_idx:base_end_idx, channel])
+            zscore_baseline = 'From ' + str(baseline[0]) + ' to ' + str(baseline[1])
+            
         
         elif base_option[0] == 'End of Sample':
             # Indexes for finding baseline at end of sample
             start = max(baseline)
             end = min(baseline)
             end_time = self.fpho_data_df['time_Green'].iloc[-1]
-            print(end_time)
             base_start_idx = self.fpho_data_df['time_Green'].searchsorted(
                 end_time - start)
             base_end_idx = self.fpho_data_df['time_Green'].searchsorted(
@@ -715,7 +730,8 @@ class fiberObj:
                 base_start_idx:base_end_idx, channel])
             base_std = np.nanstd(self.fpho_data_df.loc[
                 base_start_idx:base_end_idx, channel])
-        
+            zscore_baseline = 'From ' + str(end_time - start) + ' to ' + str(end_time - end)
+
 
         # Loops over all start times for this behavior
         # i = index, time = actual time
@@ -784,16 +800,18 @@ class fiberObj:
                         showlegend=True), 
                         row = 1, col = 2
                         )
-                
+        avg_Zscore = [i / n_events for i in Zscore_sum]  
+        graph_time = np.linspace(-time_before, time_after, num = len(x))
+        zero_idx = np.searchsorted(graph_time, 0)
         fig.add_vline(x = 0, line_dash = "dot", row = 1, col = 2)
         # Adds trace
         fig.add_trace(
             # Scatter plot
             go.Scatter( 
             # Times for baseline window
-            x = np.linspace(-time_before, time_after, num = len(x)),
+            x = graph_time,
             # Y = Zscore average of all event traces
-            y = [i / n_events for i in Zscore_sum],
+            y = avg_Zscore,
             mode = "lines",
             line = dict(color = "Black", width = 5),
             name = 'average',
@@ -801,13 +819,22 @@ class fiberObj:
             showlegend = True),
             row = 1, col = 2
             )
-
         fig.update_layout(
             title = 'Z-score of ' + beh + ' for ' 
                     + self.obj_name + ' in channel ' + channel
-            )
-        # zscore_len = len(Zscore_sum)
-        print(len(Zscore_sum))
+            )      
+        results = {'Object Name': self.obj_name, 'Behavior': beh, 'Channel' : channel,
+                   'Max Z_score' : max(avg_Zscore),
+                   'Max Z_score Time' : graph_time[np.argmax(avg_Zscore)], 
+                   'Min Z_score': min(avg_Zscore), 
+                   'Min Z_score Time' : graph_time[np.argmin(avg_Zscore)],
+                   'delta Z_score' : max(avg_Zscore) - min(avg_Zscore), 
+                   'Average Z_score Before' : np.mean(avg_Zscore[:zero_idx]),
+                   'Average Z_score After' : np.mean(avg_Zscore[zero_idx:]),
+                   'Time Before':time_before, 'Time After':time_after,
+                   'Number of events' : n_events, 'Z_score Baseline' : zscore_baseline}
+        print(results)
+        self.z_score_results = self.z_score_results.append(results, ignore_index = True)
         return fig
         
         
@@ -827,32 +854,10 @@ class fiberObj:
         
          #return the pearsons correlation coefficient and r value between 2 full channels and plots the signals overlaid and their scatter plot
     def pearsons_correlation(self, obj2, channel1, channel2, start_time, end_time):
-        # try: 
-        # if not channel1 in self.full_corr_results.columns:
-        #     self.full_corr_results.loc[:, channel1] = [
-        #         (float("NaN"), float("NaN")) 
-        #         for i in range(len(self.full_corr_results.index))
-        #         ]
-        # if not channel2 in obj2.full_corr_results.columns:
-        #     obj2.full_corr_results.loc[:, channel2] = [
-        #         (float("NaN"), float("NaN"))
-        #         for i in range(len(obj2.full_corr_results.index))
-        #         ]
-        # if not obj2.obj_name in self.full_corr_results:
-        #     self.full_corr_results.loc[obj2.obj_name, :] = [
-        #         (float("NaN"), float("NaN")) 
-        #         for i in range(len(obj2.full_corr_results.columns))
-        #         ]
-        # if not self.obj_name in obj2.full_corr_results:
-        #     obj2.full_corr_results.loc[self.obj_name, :] = [
-        #         (float("NaN"), float("NaN")) 
-        #         for i in range(len(self.full_corr_results.columns))
-        #         ]
-        
         #find start
         if np.round(self.frame_rate) != np.round(self.frame_rate):
-            return('These traces have different frame rates\n')
-        
+            print('These traces have different frame rates\n')
+            
         start_idx1 = np.searchsorted(self.fpho_data_df['time_Green'], start_time)
         start_idx2 = np.searchsorted(obj2.fpho_data_df['time_Green'], start_time)
 
@@ -865,15 +870,15 @@ class fiberObj:
             end_idx2 = np.searchsorted(obj2.fpho_data_df['time_Green'], end_time) -1 
 
         if start_time - self.fpho_data_df['time_Green'][start_idx1] < -1/self.frame_rate:
-            return('Trace 1 starts at ' + str(np.round(self.fpho_data_df['time_Green'][start_idx1])) + 's after your start time ' + str(start_time) + '\n')
+            print('Trace 1 starts at ' + str(np.round(self.fpho_data_df['time_Green'][start_idx1])) + 's after your start time ' + str(start_time) + '\n')
         if end_time - self.fpho_data_df['time_Green'][end_idx1] > 1/self.frame_rate:
-            return('Trace 1 ends at ' + str(np.round(self.fpho_data_df['time_Green'][end_idx1])) + 's before your end time ' + str(end_time) + 's\n')
+            print('Trace 1 ends at ' + str(np.round(self.fpho_data_df['time_Green'][end_idx1])) + 's before your end time ' + str(end_time) + 's\n')
 
         
         if start_time - obj2.fpho_data_df['time_Green'][start_idx2] < -1/obj2.frame_rate:
-            return('Trace 2 starts at ' + str(np.round(obj2.fpho_data_df['time_Green'][start_idx2])) + 's after your start time ' + str(start_time) + 's\n')
+            print('Trace 2 starts at ' + str(np.round(obj2.fpho_data_df['time_Green'][start_idx2])) + 's after your start time ' + str(start_time) + 's\n')
         if end_time - obj2.fpho_data_df['time_Green'][end_idx2] > 1/obj2.frame_rate:
-            return('Trace 2 ends at ' + str(np.round(obj2.fpho_data_df['time_Green'][end_idx2])) + 's before your end time ' + str(end_time) + 's\n')
+            print('Trace 2 ends at ' + str(np.round(obj2.fpho_data_df['time_Green'][end_idx2])) + 's before your end time ' + str(end_time) + 's\n')
 
         
         sig1 = self.fpho_data_df.loc[start_idx1:end_idx1, channel1]
@@ -881,8 +886,6 @@ class fiberObj:
         time1 = self.fpho_data_df.loc[start_idx1:end_idx1, 'time_Green']
         time2 = obj2.fpho_data_df.loc[start_idx2:end_idx2, 'time_Green']
 
-        #sig1smooth = ss.zscore(uniform_filter1d(sig1, size=i))
-        #sig2smooth = ss.zscore(uniform_filter1d(sig2, size=i))
         fig = make_subplots(rows = 1, cols = 2)
         #creates a scatter plot
         fig.add_trace(
@@ -917,12 +920,12 @@ class fiberObj:
     
         #make traces the same length for correlation 
         shorter_len = min(len(sig1), len(sig2)) 
-        print(shorter_len)
         #calculates the pearsons R  
         [r, p] = ss.pearsonr(sig1, sig2)
-#         self.full_corr_results[obj2.obj_name, channel1] = (r, p)
-#         obj2.full_corr_results[self.obj_name, channel2] = (r, p)
 
+        results = {'Object Name': self.obj_name, 'Channel' : channel1, 'Obj2': obj2.obj_name, 'Obj2 Channel': channel2, 'start_time' : start_time,
+                   'end_time' : end_time, 'R Score' : str(r), 'p score': str(p)}
+        self.correlation_results = self.correlation_results.append(results, ignore_index = True)
         fig.update_layout(
             title = 'Correlation between ' + self.obj_name + ' and ' 
                   + obj2.obj_name + ' is, ' + str(r) + ' p = ' + str(p)
@@ -933,35 +936,6 @@ class fiberObj:
     
     #return the pearsons 
     def behavior_specific_pearsons(self, obj2, channel, beh):
-        if not channel in self.beh_corr_results:
-            self.beh_corr_results[channel] = pd.DataFrame(
-                [], index = [self.obj_name]
-                )
-        if not channel in obj2.beh_corr_results:
-            obj2.beh_corr_results[channel] = pd.DataFrame(
-                [], index = [obj2.obj_name]
-                )
-        if not beh in self.beh_corr_results[channel].columns:
-            self.beh_corr_results[channel].loc[:, beh] = [
-                (float("NaN"), float("NaN")) 
-                for i in range(len(self.beh_corr_results[channel].index))
-                ]
-        if not beh in obj2.beh_corr_results[channel].columns:
-            obj2.beh_corr_results[channel].loc[:, beh] = [
-                (float("NaN"), float("NaN")) 
-                for i in range(len(obj2.beh_corr_results[channel].index))
-                ]
-        
-        if not obj2.obj_name in self.beh_corr_results[channel]:
-            self.beh_corr_results[channel].loc[obj2.obj_name, :] = [
-                (float("NaN"), float("NaN")) 
-                for i in range(len(obj2.beh_corr_results[channel].columns))
-                ]
-        if not self.obj_name in obj2.beh_corr_results[channel]:
-            obj2.beh_corr_results[channel].loc[self.obj_name, :] = [
-                (float("NaN"), float("NaN")) 
-                for i in range(len(self.beh_corr_results[channel].columns))
-                ]
         
         # behaviorSlice=df.loc[:,beh]
         behaviorSlice1 = self.fpho_data_df[self.fpho_data_df[beh] != ' ']
@@ -1012,21 +986,9 @@ class fiberObj:
         fig.update_xaxes(title_text = 'Time (s)', col = 1, row = 1)
         fig.update_yaxes(title_text = 'Zscore', col = 1, row = 1)
 
-        beg = ss.pearsonr(
-            sig1[0:int(len(sig1)*(1/3))], 
-            sig2[0:int(len(sig1)*(1/3))]
-            )
-        mid = ss.pearsonr(
-            sig1[int(len(sig1)*(1/3)):int(len(sig1)*(2/3))],
-            sig2[int(len(sig1)*(1/3)):int(len(sig1)*(2/3))]
-            )
-        end = ss.pearsonr(
-            sig1[int(len(sig1)*(2/3)):],
-            sig2[int(len(sig1)*(2/3)):]
-            )
-
-        self.beh_corr_results[channel].loc[obj2.obj_name, beh] = (r, p)  
-        obj2.beh_corr_results[channel].loc[self.obj_name, beh] = (r, p)
+        results = {'Object Name': self.obj_name, 'Channel': channel, 'Object2 Name': obj2.obj_name, 'rObj2 Channel': channel,
+                   'Behavior' : beh, 'Number of Events': 'unknown',  'R Score' : r, 'p score': p}
+        self.beh_corr_results = self.beh_corr_results.append(results, ignore_index = True)       
         
         return fig
     
