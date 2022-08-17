@@ -512,16 +512,22 @@ def run_download_results(event):
                                 for name in results_selecta.value],
                                 ignore_index=True)
             results.to_csv(output_name.value + '_zscore_results.csv')
+            pn.state.notifications.success(output_name.value + 'Z-Score results downloaded', duration = 4000)
+            print('Z-Score results saved locally to: ' + output_name.value + '_zscore_results.csv')
         if types == 'Correlation Results':
             results = pd.concat([fiber_objs[name].correlation_results
                                 for name in results_selecta.value],
                                 ignore_index=True)
             results.to_csv(output_name.value + '_correlation_results.csv')
+            pn.state.notifications.success(output_name.value + 'Correlation results downloaded', duration = 4000)
+            print('Correlation results saved locally to: ' + output_name.value + '_correlation_results.csv')
         if types == 'Behavior Specific Correlation Reuslts':
             results = pd.concat([fiber_objs[name].beh_corr_results
                                 for name in results_selecta.value],
                                 ignore_index=True)
             results.to_csv(output_name.value + '_behavior_correlation_results.csv')
+            pn.state.notifications.success(output_name.value + 'Behavior Correlation results downloaded', duration = 4000)
+            print('Behavior Correlation results saved locally to: ' + output_name.value + '_behavior_correlation_results.csv')
         
 
 
@@ -563,7 +569,7 @@ log_card = pn.Card(pn.Row(logger_info, clear_logs), terminal, title = 'Logs',
 #Input variables
 input_1 = pn.widgets.TextInput(name = 'Object Name', width = 80, placeholder = 'String')
 input_2 = pn.widgets.IntInput(name = 'Fiber Number', start = 1, end = 16, width = 80, placeholder = '1-16')
-input_3 = pn.widgets.IntInput(name = 'Animal Number', start = 1, end = 16, width = 80, placeholder = '1-16')
+input_3 = pn.widgets.TextInput(name = 'Animal Number', width = 80, placeholder = 'String')
 input_4 = pn.widgets.TextInput(name = 'Exp Date', width = 80, placeholder = 'Date')
 input_5 = pn.widgets.TextInput(name = 'Exp Time', width = 80, placeholder = 'Time')
 input_6 = pn.widgets.IntInput(name = 'Exclude time from beginning of recording',
