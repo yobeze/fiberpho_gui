@@ -233,8 +233,9 @@ class fiberObj:
         npm_dict = {2: 'Green', 1: 'Isosbestic', 4: 'Red'}
         
         for color in led_states:
-            data_dict['time_' + npm_dict[color]] =  time_slice[
-                time_slice['LedState'] == color]['Timestamp'].values.tolist()
+            if color == 1 or color == 2 or color == 4:
+                data_dict['time_' + npm_dict[color]] =  time_slice[
+                    time_slice['LedState'] == color]['Timestamp'].values.tolist()
                 
             if green_ROI: 
                 if color == 1 or color == 2:
