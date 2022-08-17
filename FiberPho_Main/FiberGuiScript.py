@@ -26,7 +26,7 @@ import FiberClass as fc
 
 '''
 Command to run script:
-    panel serve --show FiberGuiScript.py --websocket-max-message-size=104876000 --autoreload
+    Script : panel serve --show FiberGuiScript.py --websocket-max-message-size=104876000 --autoreload
     Notebook : panel serve FiberGuiNotebook.ipynb --websocket-max-message-size=104876000 --show
 '''
 
@@ -58,7 +58,7 @@ def run_init_fiberobj(event = None):
     file_name = fpho_input.filename
     obj_name = input_1.value_input
     fiber_num = input_2.value
-    animal_num = input_3.value
+    animal_num = input_3.value_input
     exp_date = input_4.value_input
     exp_time = input_5.value_input
     start_time = input_6.value #looking for better name
@@ -113,6 +113,8 @@ def run_init_fiberobj(event = None):
             beh_corr_selecta2.options = [*existing_objs]
             save_obj_selecta.options = [*existing_objs]
             delete_obj_selecta.options = [*existing_objs]
+            results_selecta.options = [*existing_objs]
+            #Object created notification
             pn.state.notifications.success('Created ' + input_params[0] + ' object!', duration = 4000)
         else:
             pn.state.notifications.error('Error: Please check logger for more info', duration = 4000)
@@ -161,6 +163,8 @@ def run_upload_fiberobj(event = None):
         beh_corr_selecta2.options = [*existing_objs]
         save_obj_selecta.options = [*existing_objs]
         delete_obj_selecta.option = [*existing_objs]
+        results_selecta.options = [*existing_objs]
+        #Object uploaded notification
         pn.state.notifications.success('Uploaded ' + temp.obj_name + ' object!', duration = 4000)
     except Exception as e:
         logger.error(traceback.format_exc())
@@ -191,6 +195,7 @@ def run_delete_fiberobj(event = None):
         beh_corr_selecta2.options = [*existing_objs]
         save_obj_selecta.options = [*existing_objs]
         delete_obj_selecta.options = [*existing_objs]
+        results_selecta.options = [*existing_objs]
     except Exception as e:
         logger.error(traceback.format_exc())
         pn.state.notifications.error('Error: Please check logger for more info', duration = 4000)
@@ -326,16 +331,19 @@ def run_plot_zscore(event = None):
         return
                 
 # Runs the pearsons correlation coefficient
-def run_trial_pearsons(event = None):
+def run_pearsons_correlation(event = None):
     try:
-        for channels in pearsons_channel_selecta.value:
-            name1 = pearsons_selecta1.value
-            name2 = pearsons_selecta2.value
-            obj1 = fiber_objs[name1]
-            obj2 = fiber_objs[name2]
-            plot_pane = pn.pane.Plotly(height = 300, sizing_mode = "stretch_width") #Creates pane for plot
-            plot_pane.object = obj1.within_trial_pearsons(obj2, channels)
-            pearsons_card.append(plot_pane) #Add figure to template
+        name1 = pearsons_selecta1.value
+        name2 = pearsons_selecta2.value
+        obj1 = fiber_objs[name1]
+        obj2 = fiber_objs[name2]
+        channel1 = channel1_selecta.value
+        channel2 = channel2_selecta.value
+        start = pears_start_time.value
+        end = pears_end_time.value
+        plot_pane = pn.pane.Plotly(height = 300, sizing_mode = "stretch_width") #Creates pane for plot
+        plot_pane.object = obj1.pearsons_correlation(obj2, channel1, channel2, start, end)
+        pearsons_card.append(plot_pane) #Add figure to template
     except KeyboardInterrupt:
         return
     except Exception as e:
@@ -403,13 +411,15 @@ def update_selecta_options(event = None):
         zbehs_selecta.options = list(available_behaviors)
         zchannel_selecta.options = list(available_channels)
       
-    #Full Pearsons card
+    #Pearsons card
     name1 = pearsons_selecta1.value
     name2 = pearsons_selecta2.value
     obj1 = fiber_objs[name1]
     obj2 = fiber_objs[name2]
-    available_channels = obj1.channels & obj2.channels
-    pearsons_channel_selecta.options = list(available_channels)
+    available_channels1 = obj1.channels
+    available_channels2 = obj2.channels
+    channel1_selecta.options = list(available_channels1)
+    channel2_selecta.options = list(available_channels2)
     
     #Correlation for a behavior
     name1 = beh_corr_selecta1.value
@@ -492,6 +502,26 @@ def run_convert_lick(event):
             pn.state.notifications.error('Error: Please check logger for more info', duration = 4000)
     else:
         print('Error reading file')
+        
+
+def run_download_results(event):
+    for types in result_type_selecta.value:
+        results = pd.DataFrame()
+        if types == 'Zscore Results':
+            results = pd.concat([fiber_objs[name].z_score_results
+                                for name in results_selecta.value],
+                                ignore_index=True)
+            results.to_csv(output_name.value + '_zscore_results.csv')
+        if types == 'Correlation Results':
+            results = pd.concat([fiber_objs[name].correlation_results
+                                for name in results_selecta.value],
+                                ignore_index=True)
+            results.to_csv(output_name.value + '_correlation_results.csv')
+        if types == 'Behavior Specific Correlation Reuslts':
+            results = pd.concat([fiber_objs[name].beh_corr_results
+                                for name in results_selecta.value],
+                                ignore_index=True)
+            results.to_csv(output_name.value + '_behavior_correlation_results.csv')
         
 
 
@@ -779,16 +809,21 @@ zscore_card = pn.Card(zscore_widget, clear_zscore, title = 'Zscore Plot',
 
 # ----------------------------------------------------- # 
 # ----------------------------------------------------- # 
-#Pearsons Trial widget
+#Pearsons Correlation widget
 
 #Input variables
 pearsons_selecta1 = pn.widgets.Select(name = 'Object 1', value = [], options = [], )
 pearsons_selecta2 = pn.widgets.Select(name = 'Object 2', value = [], options = [], )
-pearsons_channel_selecta = pn.widgets.MultiSelect(name = 'Signal', value = [], options = [], )
+channel1_selecta = pn.widgets.Select(name = 'Signal', value = [], options = [])
+channel2_selecta = pn.widgets.Select(name = 'Signal', value = [], options = [])
+pears_start_time = pn.widgets.IntInput(name = 'Start Time', width = 50,
+                                  placeholder = 'Seconds', value = 0)
+pears_end_time = pn.widgets.IntInput(name = 'End Time', width = 50,
+                                 placeholder = 'Seconds', value = -1)
 
 #Buttons
 pearsons_btn = pn.widgets.Button(name = 'Calculate Pearsons Correlation', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
-pearsons_btn.on_click(run_trial_pearsons) #Button action
+pearsons_btn.on_click(run_pearsons_correlation) #Button action
 pearson_options_btn = pn.widgets.Button(name = 'Update Options', button_type = 'primary', width = 200, sizing_mode = 'stretch_width', align = 'start')
 pearson_options_btn.on_click(update_selecta_options) #Button action
 clear_pears = pn.widgets.Button(name = 'Clear Plots \u274c', button_type = 'danger', width = 30, sizing_mode = 'fixed', align = 'start')
@@ -800,8 +835,11 @@ pears_info = pn.pane.Markdown("""
                                 """, width = 200)
 
 #Box
-pearson_options = pn.Column(pearsons_selecta1, pearsons_selecta2, pearson_options_btn, pearsons_channel_selecta, pearsons_btn)
-pearson_widget = pn.WidgetBox(pears_info, pearson_options)
+pearson_row1  = pn.Row(pearsons_selecta1, pearsons_selecta2)
+pearson_row2  = pn.Row(channel1_selecta, channel2_selecta)
+pearson_row3  = pn.Row(pears_start_time, pears_end_time)
+pearson_widget = pn.WidgetBox('# Pearons Correlation Plot', pears_info,
+                              pearson_row1, pearson_options_btn, pearson_row2, pearson_row3, pearsons_btn)
 pearsons_card = pn.Card(pearson_widget, clear_pears, title = 'Pearsons Correlation Coefficient', background = 'WhiteSmoke', width = 600 , collapsed = True)
 
 
@@ -834,6 +872,34 @@ beh_corr_widget = pn.WidgetBox(beh_corr_info, beh_corr_options)
 beh_corr_card = pn.Card(beh_corr_widget, clear_beh_corr, title = 'Behavior Specific Pearsons Correlation', background = 'WhiteSmoke', width = 600, collapsed = True)
 
 
+# ----------------------------------------------------- # 
+# ----------------------------------------------------- # 
+#Download Results widget
+
+#Input variables
+output_name = pn.widgets.TextInput(name = 'Output filename', width = 90, placeholder = 'String')
+results_selecta = pn.widgets.MultiSelect(name = 'Fiber Objects', value = [], options = [])
+result_type_selecta= pn.widgets.MultiSelect(name = 'Result Types', value = [],
+                                            options = ['Zscore Results',
+                                                       'Correlation Results',
+                                                       'Behavior Specific Correlation Reuslts'])
+
+#Buttons
+download_results_btn = pn.widgets.Button(name = 'Download',
+                                 button_type = 'primary', width = 200,
+                                 sizing_mode = 'stretch_width',
+                                 align = 'start')
+
+download_results_btn.on_click(run_download_results) #Button action
+
+#Box
+download_results_widget = pn.WidgetBox('# Download Results', output_name, results_selecta,
+                                       result_type_selecta, download_results_btn)
+download_results_card = pn.Card(download_results_widget, clear_pears,
+                        title = 'Download Results',
+                        background = 'WhiteSmoke', width = 600, collapsed = True)
+
+# ----------------------------------------------------- # 
 # ----------------------------------------------------- # 
 #Object info widget
 
@@ -874,6 +940,7 @@ material.main.append(plot_beh_card)
 material.main.append(zscore_card)
 material.main.append(pearsons_card)
 material.main.append(beh_corr_card)
+material.main.append(download_results_card)
 material.main.append(log_card)
 
 material.servable()
