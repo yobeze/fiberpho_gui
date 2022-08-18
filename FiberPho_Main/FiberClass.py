@@ -327,18 +327,18 @@ class fiberObj:
         self.fpho_data_df = pd.DataFrame.from_dict(data_dict)
         
     
-    ##Helper Functions   
+#### Helper Functions ####
     def fit_exp(self, values, a, b, c, d, e):
-        """Transforms data into an exponential function
-            of the form y=A*exp(-B*X)+C*exp(-D*x) + E
+        """
+        Transforms data into an exponential function
+        of the form y=A*exp(-B*X)+C*exp(-D*x) + E
 
-            Parameters
-            ----------
-            values: list
-                    data
-            a, b, c, d, e: integers or floats
-                    estimates for the parameter values of
-                    A, B, C, D and E
+        Parameters
+        ----------
+        values : list
+            data
+        a, b, c, d, e: integers or floats
+            estimates for the parameter values of A, B, C, D and E
         """
         values = np.array(values)
 
@@ -349,21 +349,6 @@ class fiberObj:
 
         return a * values + b
 
-#### Helper Functions ####
-    #Validates the instance properly created
-    def validate(self):
-        has_attribute_1 = hasattr(test_1, "fpho_data_df")
-#         has_attribute_2 = hasattr(test_2, "fpho_data_df")
-
-        if has_attribute_1:
-            print("Instance and dataframe created")
-            print(self.fpho_data_df.head(5))
-#         elif has_attribute_2:
-#             print("Second instance created")
-#             print(fpho_data_df.head(5))
-        else:
-            raise error("No instance created")
-            
 #### End Helper Functions #### 
             
     
@@ -372,19 +357,18 @@ class fiberObj:
     #Signal Trace function
     def raw_signal_trace(self):
         """
-            Prints the person's name and age.
+        Creates and displays graphs of a fiber object's signals.
 
-            If the argument 'additional' is passed, then it is appended after the main info.
+        Parameters
+        ----------
+        None
 
-            Parameters
-            ----------
-            additional : str, optional
-                More info to be displayed (default is None)
-
-            Returns
-            -------
-            None
+        Returns
+        -------
+        fig : plotly figure graph
+            Plot of raw signal traces
         """
+
         fig = make_subplots(rows = 1, cols = 1, shared_xaxes = True,
                             vertical_spacing = 0.02, x_title = "Time (s)",
                             y_title = "Fluorescence")
@@ -409,20 +393,21 @@ class fiberObj:
     #Plot fitted exp function
     def normalize_a_signal(self, signal, reference):
         print('Does this work')
-        """Creates a plot normalizing 1 fiber data to an
-            exponential of the form y=A*exp(-B*X)+C*exp(-D*x)
+        """
+        Creates a plot normalizing 1 fiber data to an
+        exponential of the form y=A*exp(-B*X)+C*exp(-D*x)
 
-            Parameters
-            ----------
-            fpho_dataframe: string
-                    pandas dataframe
-            output_filename: string
-                    name for output csv
-            Returns:
-            --------
-            output_filename_f1GreenNormExp.png
-            & output_filename_f1RedNormExp.png: png files
-                    containing the normalized plot for each fluorophore
+        Parameters
+        ----------
+        signal : string
+                user channel selection
+        reference : string
+                user reference trace selection
+        Returns
+        --------
+        output_filename_f1GreenNormExp.png
+        & output_filename_f1RedNormExp.png: png files
+        containing the normalized plot for each fluorophore
         """
         # Get coefficients for normalized fit using first guesses
         # for the coefficients - B and D (the second and fourth
@@ -629,21 +614,22 @@ class fiberObj:
     # ----------------------------------------------------- # 
 
     def import_behavior_data(self, BORIS_filename, filename):
-        """Takes a file name, returns a dataframe of parsed data
+        """
+        Takes a file name and returns a dataframe of parsed data
 
-            Parameters
-            ----------
-            BORIS_filename: string
-                            The path to the CSV file
+        Parameters
+        ----------
+        BORIS_filename : string
+            The path to the CSV file
 
-            Returns:
-            --------
-            behaviorData: pandas dataframe
-                    contains:
-                         Time(total msec), Time(sec), Subject,
-                         Behavior, Status
-            """
-
+        Returns
+        --------
+        behaviorData: pandas dataframe
+                contains:
+                    Time(total msec), Time(sec), Subject,
+                    Behavior, Status
+        """
+        
         # Open file, catch errors
         try:
             BORIS_data = pd.read_csv(BORIS_filename, header=15)  # starts at data
@@ -747,9 +733,46 @@ class fiberObj:
     def plot_zscore(self, channel, beh, time_before, time_after,
                     baseline = 0, base_option = 0, show_first = -1,
                     show_last = 0, show_every = 1):
-        """Takes a dataframe and creates plot of z-scores for
+        
+        """
+        Takes a dataframe and creates plot of z-scores for
         each time a select behavior occurs with the avg
-    z-score and SEM"""
+        z-score and SEM. Stores results in dataframe
+    
+        Parameters
+        ----------
+        channel : string
+            user selected channels
+        
+        beh : string
+            user selected behaviors
+        
+        time_before : int
+            timestamps to include before event
+            
+        time_after : int
+            timestamps to include after start of event
+        
+        baseline : list, optional
+            baseline window start and end times [0, 1] respectively
+        
+        base_option : int, optional
+            baseline parameter options - start of sample, before events, end of sample
+        
+        show_first : int, optional
+            show traces from event number [int]
+        
+        show_last : int, optional
+            show traces up to event number [int]
+            
+        show_every : int, optional
+            show one in every [int] traces
+        
+        Returns
+        ----------
+        fig : scatter plot
+            Plot of z-scores for select behaviors
+        """
         
         # Finds all times where behavior starts, turns into list
         beh_times = list(self.fpho_data_df[(
@@ -939,6 +962,33 @@ class fiberObj:
         
          #return the pearsons correlation coefficient and r value between 2 full channels and plots the signals overlaid and their scatter plot
     def pearsons_correlation(self, obj2, channel1, channel2, start_time, end_time):
+        """
+        Takes in user chosen objects and channels then returns the 
+        Pearson’s correlation coefficient and plots the signals. 
+
+        Parameters
+        ----------
+        obj2 : fiber object
+            second object for correlation analysis
+        
+        channel1 : string
+            first object's selected signal for analysis
+        
+        channel2 : string
+            second object's selected signal for analysis
+        
+        start_time : int
+            starting timestamp of data
+        
+        end_time : int
+            ending timestamp of data
+            
+        Returns
+        --------
+        fig : scatter plot
+            Plot of signals based on pearson's correlation
+        """
+        
         #find start
         if np.round(self.frame_rate) != np.round(self.frame_rate):
             print('These traces have different frame rates\n')
@@ -1018,9 +1068,27 @@ class fiberObj:
         return fig
         
 
-    
-    #return the pearsons 
     def behavior_specific_pearsons(self, obj2, channel, beh):
+        """
+        Takes in user chosen objects, channels and behaviors to calculate 
+        the behavior specific Pearson’s correlation and plot the signals. 
+
+        Parameters
+        ----------
+        obj2 : fiber object
+            second object for correlation analysis
+        
+        channel : string
+            user selected signals for analysis
+        
+        beh : string
+            user selected behaviors for analysis 
+            
+        Returns
+        --------
+        fig : scatter plot
+            Plot of signals based on behavior specific pearson's correlation
+        """
         
         # behaviorSlice=df.loc[:,beh]
         behaviorSlice1 = self.fpho_data_df[self.fpho_data_df[beh] != ' ']
