@@ -103,57 +103,49 @@ class fiberObj:
     channels : set
         Stores the signals used in photometry data
         
-    full_corr_results : Dataframe
-        Stores results of the Pearsons correlation analysis in a pandas dataframe
-    
-    beh_corr_results : dict
-        Stores results of the Behavior specific Pearsons correlation in a dictionary
-        
     fpho_data_dict : dict
         Stores photometry data into a dictionary
         
     fpho_data_df : Dataframe
         Uses fpho_data_dict to convert photometry data into a pandas dataframe for use
+        
+    color_dict : dict
+        stores translated channel labels
+    
+    z_score_results : Dataframe
+        stores results of Z-Score computations
+    
+    correlation_results : Dataframe
+        stores results of Pearsons computations
+    
+    beh_corr_results : Dataframe
+        stores results of behavior specific Pearsons computations
+        
+    frame_rate : List ???
+        calculates frame rate of captured data
     ----------
     
     
     Methods
     ----------
     __init__(file, obj, fiber_num, animal, exp_date, 
-                exp_start_time, start_time, stop_time, filename):
-        Initializes an instance of a Fiber object.
+                exp_start_time, start_time, stop_time, filename)
 
-    raw_signal_trace():
-        Creates and displays graphs of a fiber object's signals.
+    raw_signal_trace()
         
 
-    normalize_a_signal(signal, reference):
-        Normalizes the signal and reference trace to a biexponential, linearly fits the
-        normalized reference to the normalized signal. Stores all fitted traces in a
-        dataframe and plots them for examination. If the fit is not good, it will
-        instead opt to use the median.
+    normalize_a_signal(signal, reference)
         
-    import_behavior_data(BORIS_filename, filename):
-        Imports user uploaded behavior data and reads dataframe to update and include
-        the subject, behavior, and status columns to the dataframe (fpho_data_df).
+    import_behavior_data(BORIS_filename, filename)
         
-    plot_behavior(behaviors, channels):
-        Creates and displays the different channels from the behavior dataset
+    plot_behavior(behaviors, channels)
         
     plot_zscore(channel, beh, time_before, time_after,
-                    baseline = 0, base_option = 0):
-        Takes a dataframe and creates a plot of z-scores for each time a select
-        behavior occurs with the avg z-score and standard error mean.
+                    baseline = 0, base_option = 0)
         
-    within_trial_pearsons(obj2, channel):
-        Takes in user chosen objects/channels and returns their Pearson's correlation
-        coefficient and r value between 2 full channels and plots their signals
-        overlaid and their scatter plots.
+    within_trial_pearsons(obj2, channel)
         
-    behavior_specific_pearsons(obj2, channel, behavior):
-        Takes in user chosen objects/channels and behaviors to calculate behavior
-        specific Pearson correlations and plots their signals overlaid as well
-        as their scatter plots.
+    behavior_specific_pearsons(obj2, channel, behavior)
         
     ----------
         
@@ -169,68 +161,33 @@ class fiberObj:
 
         Parameters
         ----------
-            obj_name : str
-                name of the fiber object
+        obj_name : str
+            name of the fiber object
 
-            fiber_num : int
-                fiber number to analyze (range: 0-2)
+        fiber_num : int
+            fiber number to analyze (range: 0-2)
 
-            animal_num : int
-                the animal number used in the experiment
+        animal_num : int
+            the animal number used in the experiment
 
-            exp_date : Date-string (MM/DD), optional
-                date of the captured photometry recording
+        exp_date : Date-string (MM/DD), optional
+            date of the captured photometry recording
 
-            exp_time : Time (Hr/Min), optional
-                time of the captured photometry recording
+        exp_time : Time (Hr/Min), optional
+            time of the captured photometry recording
 
-            start_time : int
-                time to exclude from beginning of recording
+        start_time : int
+            time to exclude from beginning of recording
 
-            stop_time : int
-                time to stop at from start of recording 
+        stop_time : int
+            time to stop at from start of recording 
 
-            file_name : str
-                file name of the uploaded photometry file
+        file_name : str
+            file name of the uploaded photometry file
 
-            beh_file : Dataframe
-                pandas dataframe of the behavior recording
-
-            beh_filename : str
-                name of the behavior file
-
-            behaviors : set
-                stores unique behaviors of fiber object
-
-            channels : set
-                stores the signals used in photometry data
-
-            full_corr_results : Dataframe
-                stores results of the Pearsons correlation analysis in a pandas dataframe
-
-            beh_corr_results : dict
-                stores results of the Behavior specific Pearsons correlation in a dictionary
-
-            fpho_data_dict : dict
-                stores photometry data into a dictionary
-
-            fpho_data_df : Dataframe
-                uses fpho_data_dict to convert photometry data into a pandas dataframe for use
-                
-            color_dict : dict
-                stores translated channel labels
-            
-            z_score_results : Dataframe
-                stores results of Z-Score computations
-            
-            correlation_results : Dataframe
-                stores results of Pearsons computations
-            
-            beh_corr_results : Dataframe
-                stores results of behavior specific Pearsons computations
-                
-            frame_rate : List ???
-                calculates frame rate of captured data
+        Returns
+        ----------
+        fiber object
         """
         
         self.obj_name = obj
@@ -331,7 +288,7 @@ class fiberObj:
     def fit_exp(self, values, a, b, c, d, e):
         """
         Transforms data into an exponential function
-        of the form y=A*exp(-B*X)+C*exp(-D*x) + E
+        of the form y = A * exp(-B * X) + C * exp(-D * x) + E
 
         Parameters
         ----------
@@ -673,6 +630,22 @@ class fiberObj:
         return
 
     def plot_behavior(self, behaviors, channels):
+        """
+        Plots behavior specific signals
+        
+        Parameters
+        ----------
+        behaviors : string
+            user selected behaviors
+        
+        channels : string
+            user selected channels
+            
+        Returns
+        ----------
+        fig : scatter plot
+        """
+        
         fig = make_subplots(rows = len(channels), cols = 1,
                             subplot_titles = [channel for channel in channels],
                             shared_xaxes = True)
