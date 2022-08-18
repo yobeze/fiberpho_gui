@@ -121,10 +121,7 @@ class fiberObj:
     ----------
     __init__(file, obj, fiber_num, animal, exp_date, 
                 exp_start_time, start_time, stop_time, filename):
-        Initializes an instance of a fiber object. Holds all the data from a fiber 
-        experiment as well as some results from analysis. Takes in a fiber photometry
-        file (.csv) and parses it into a dataframe (fpho_data_df) with 9 columns: time_iso, time_green,
-        time_red, green_iso, green_green, green_red, red_iso, red_green, red_red.
+        Initializes an instance of a Fiber object.
 
     raw_signal_trace():
         Creates and displays graphs of a fiber object's signals.
@@ -163,6 +160,79 @@ class fiberObj:
     """
     def __init__(self, file, obj, fiber_num, animal, exp_date,
                  exp_start_time, start_time, stop_time, filename):
+        """
+        Constructs all the necessary attributes for the FiberPho object. Holds all 
+        the data from a fiber experiment as well as some results from analysis. 
+        Takes in a fiber photometry file (.csv) and parses it into a dataframe 
+        (fpho_data_df) with 9 columns: time_iso, time_green, time_red, 
+        green_iso, green_green, green_red, red_iso, red_green, red_red.
+
+        Parameters
+        ----------
+            obj_name : str
+                name of the fiber object
+
+            fiber_num : int
+                fiber number to analyze (range: 0-2)
+
+            animal_num : int
+                the animal number used in the experiment
+
+            exp_date : Date-string (MM/DD), optional
+                date of the captured photometry recording
+
+            exp_time : Time (Hr/Min), optional
+                time of the captured photometry recording
+
+            start_time : int
+                time to exclude from beginning of recording
+
+            stop_time : int
+                time to stop at from start of recording 
+
+            file_name : str
+                file name of the uploaded photometry file
+
+            beh_file : Dataframe
+                pandas dataframe of the behavior recording
+
+            beh_filename : str
+                name of the behavior file
+
+            behaviors : set
+                stores unique behaviors of fiber object
+
+            channels : set
+                stores the signals used in photometry data
+
+            full_corr_results : Dataframe
+                stores results of the Pearsons correlation analysis in a pandas dataframe
+
+            beh_corr_results : dict
+                stores results of the Behavior specific Pearsons correlation in a dictionary
+
+            fpho_data_dict : dict
+                stores photometry data into a dictionary
+
+            fpho_data_df : Dataframe
+                uses fpho_data_dict to convert photometry data into a pandas dataframe for use
+                
+            color_dict : dict
+                stores translated channel labels
+            
+            z_score_results : Dataframe
+                stores results of Z-Score computations
+            
+            correlation_results : Dataframe
+                stores results of Pearsons computations
+            
+            beh_corr_results : Dataframe
+                stores results of behavior specific Pearsons computations
+                
+            frame_rate : List ???
+                calculates frame rate of captured data
+        """
+        
         self.obj_name = obj
         self.fiber_num = fiber_num
         self.animal_num = animal
@@ -301,6 +371,20 @@ class fiberObj:
 
     #Signal Trace function
     def raw_signal_trace(self):
+        """
+            Prints the person's name and age.
+
+            If the argument 'additional' is passed, then it is appended after the main info.
+
+            Parameters
+            ----------
+            additional : str, optional
+                More info to be displayed (default is None)
+
+            Returns
+            -------
+            None
+        """
         fig = make_subplots(rows = 1, cols = 1, shared_xaxes = True,
                             vertical_spacing = 0.02, x_title = "Time (s)",
                             y_title = "Fluorescence")
