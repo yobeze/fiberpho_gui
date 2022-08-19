@@ -19,6 +19,19 @@ import re
 pn.extension('terminal')
 
 def lick_to_boris(lick_file):
+    """
+    Converts lickometer data to a BORIS file that is readable by the GUI
+
+    Parameters
+    ----------
+    lick_file : file
+        uploaded lickometer file
+
+    Returns
+    ----------
+    boris : Dataframe
+        converted data for download
+    """
     trimmed = lick_file[lick_file['Licks'] != 0]
 
     starts = [(trimmed.iloc[0]['Time'] - lick_file.iloc[0]['Time']) / 1000]
@@ -63,7 +76,7 @@ def lick_to_boris(lick_file):
 class fiberObj:
     
     """
-        A class to represent a fiber object for fiber photometry and behavior analysis.
+    A class to represent a fiber object for fiber photometry and behavior analysis.
 
     Attributes
     ----------
@@ -123,31 +136,6 @@ class fiberObj:
         
     frame_rate : List ???
         calculates frame rate of captured data
-    ----------
-    
-    
-    Methods
-    ----------
-    __init__(file, obj, fiber_num, animal, exp_date, 
-                exp_start_time, start_time, stop_time, filename)
-
-    raw_signal_trace()
-        
-
-    normalize_a_signal(signal, reference)
-        
-    import_behavior_data(BORIS_filename, filename)
-        
-    plot_behavior(behaviors, channels)
-        
-    plot_zscore(channel, beh, time_before, time_after,
-                    baseline = 0, base_option = 0)
-        
-    within_trial_pearsons(obj2, channel)
-        
-    behavior_specific_pearsons(obj2, channel, behavior)
-        
-    ----------
         
     """
     def __init__(self, file, obj, fiber_num, animal, exp_date,
@@ -187,7 +175,8 @@ class fiberObj:
 
         Returns
         ----------
-        fiber object
+        class object : fiberObj
+            Initialized object of type fiberObj
         """
         
         self.obj_name = obj
@@ -288,13 +277,16 @@ class fiberObj:
     def fit_exp(self, values, a, b, c, d, e):
         """
         Transforms data into an exponential function
-        of the form y = A * exp(-B * X) + C * exp(-D * x) + E
+        of the form 
+        ..math:: 
+            y = A * exp(-B * X) + C * exp(-D * x) + E
 
         Parameters
         ----------
         values : list
             data
-        a, b, c, d, e: integers or floats
+
+        a, b, c, d, e : int/float
             estimates for the parameter values of A, B, C, D and E
         """
         values = np.array(values)
@@ -302,12 +294,25 @@ class fiberObj:
         return a * np.exp(-b * values) + c * np.exp(-d * values) + e
 
     def lin_fit(self, values, a, b):
+        """
+        Linearly transforms data to fit ...
+
+        Parameters
+        ----------
+        values : list
+            data
+
+        a, b : integers or floats
+            estimates for the parameter values of A, B
+
+        """
         values = np.array(values)
 
         return a * values + b
 
 #### End Helper Functions #### 
-            
+    
+
     
 ##### Class Functions #####
 
@@ -322,7 +327,7 @@ class fiberObj:
 
         Returns
         -------
-        fig : plotly figure graph
+        fig : plotly.graph_objects.Scatter
             Plot of raw signal traces
         """
 
@@ -581,10 +586,9 @@ class fiberObj:
 
         Returns
         --------
-        behaviorData: pandas dataframe
-                contains:
-                    Time(total msec), Time(sec), Subject,
-                    Behavior, Status
+        behaviorData : pandas dataframe
+            contains - Time(total msec), Time(sec), 
+            Subject, Behavior, Status
         """
         
         # Open file, catch errors
@@ -643,7 +647,8 @@ class fiberObj:
             
         Returns
         ----------
-        fig : scatter plot
+        fig : plotly.graph_objects.Scatter
+            Scatter plot of select behavior signals
         """
         
         fig = make_subplots(rows = len(channels), cols = 1,
@@ -743,7 +748,7 @@ class fiberObj:
         
         Returns
         ----------
-        fig : scatter plot
+        fig : plotly.graph_objects.Scatter
             Plot of z-scores for select behaviors
         """
         
@@ -921,6 +926,25 @@ class fiberObj:
         
     # Zscore calc helper
     def zscore(self, ls, mean = None, std = None):
+        """
+        Helper function to calculate z-scores
+
+        Parameters
+        ----------
+        ls : list
+            list of trace signals
+
+        mean : int/float, optional
+            baseline mean value
+
+        std : int/float, optional
+            baseline standard deviation value
+
+        Returns
+        ----------
+        new_ls : list
+            list of calculated z-scores per event
+        """
         # Default Params, no arguments passed
         if mean is None and std is None:
             mean = np.nanmean(ls)
@@ -957,9 +981,9 @@ class fiberObj:
             ending timestamp of data
             
         Returns
-        --------
-        fig : scatter plot
-            Plot of signals based on pearson's correlation
+        ----------
+        fig : plotly.graph_objects.Scatter
+            Plot of signals based on correlation results
         """
         
         #find start
@@ -1059,8 +1083,8 @@ class fiberObj:
             
         Returns
         --------
-        fig : scatter plot
-            Plot of signals based on behavior specific pearson's correlation
+        fig : plotly.graph_objects.Scatter
+            Plot of signals based on behavior specific correlations
         """
         
         # behaviorSlice=df.loc[:,beh]
