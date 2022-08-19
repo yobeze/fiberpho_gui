@@ -179,7 +179,7 @@ def run_delete_fiberobj(event = None):
         for obj in delete_obj_selecta.value:
             pn.state.notifications.warning('Deleting ' + obj + ' object!', duration = 4000)
             del fiber_objs[obj]
-            del fiber_data[obj]
+            fiber_data.drop([obj], axis = 0, inplace = True)
             
         info_table.value = fiber_data
         existing_objs = fiber_objs
