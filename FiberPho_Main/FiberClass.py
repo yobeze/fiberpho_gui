@@ -188,7 +188,7 @@ class fiberObj:
         self.stop_time = stop_time #looking for better names
         self.file_name = filename
         self.beh_file = None
-        self.beh_filename = None
+        self.beh_filename = 'NaN'
         self.behaviors = set()
         self.channels = set()
         self.color_dict = {'Raw_Green' : 'LawnGreen', 'Raw_Red': 'Red', 'Raw_Isosbestic': 'Cyan',
