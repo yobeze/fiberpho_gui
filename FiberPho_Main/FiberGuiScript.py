@@ -101,7 +101,8 @@ def run_init_fiberobj(event = None):
     except Exception as e:
         logger.error(traceback.format_exc())
         pn.state.notifications.error(
-            'Error: Please check logger for more information', duration = 4000)
+            'Error: Please check logger for more information',
+            duration = 4000)
         return
 
 
@@ -992,7 +993,10 @@ beh_corr_options = pn.Column(beh_corr_selecta1, beh_corr_selecta2,
                              beh_corr_options_btn, beh_corr_channel_selecta,
                              beh_corr_behavior_selecta, beh_corr_btn)
 beh_corr_widget = pn.WidgetBox(beh_corr_info, beh_corr_options)
-beh_corr_card = pn.Card(beh_corr_widget, clear_beh_corr, title = 'Behavior Specific Pearsons Correlation', background = 'WhiteSmoke', width = 600, collapsed = True)
+beh_corr_card = pn.Card(beh_corr_widget, clear_beh_corr,
+                        title = 'Behavior Specific Pearsons Correlation',
+                        background = 'WhiteSmoke', width = 600,
+                        collapsed = True)
 
 
 # ----------------------------------------------------- # 
