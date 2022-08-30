@@ -90,7 +90,7 @@ def run_init_fiberobj(event = None):
             info_table.value = fiber_data
             existing_objs = fiber_objs
             # Updates all cards with new objects
-            update_selecta_options(existing_objs)
+            update_obj_selectas(existing_objs)
             #Object created notification
             pn.state.notifications.success('Created ' + input_params[0]
                                            + ' object!', duration = 4000)
@@ -130,7 +130,7 @@ def run_upload_fiberobj(event = None):
 
         existing_objs = fiber_objs
         # Updates all cards with new objects
-        update_selecta_options(existing_objs)
+        update_obj_selectas(existing_objs)
         
         #Object uploaded notification
         pn.state.notifications.success('Uploaded ' + temp.obj_name
@@ -155,7 +155,7 @@ def run_delete_fiberobj(event = None):
         info_table.value = fiber_data
         existing_objs = fiber_objs
         # Updates all cards with new objects
-        update_selecta_options(existing_objs)
+        update_obj_selectas(existing_objs)
     except Exception as e:
         logger.error(traceback.format_exc())
         pn.state.notifications.error(
@@ -515,7 +515,7 @@ def run_download_results(event):
             print('Behavior Correlation results saved locally to: ' + 
                   output_name.value + '_behavior_correlation_results.csv')
 
-def run_update_selectas(existing_objs):
+def update_obj_selectas(existing_objs):
     #Updates selectors with new objects
             obj_selecta.options = [*existing_objs]
             norm_selecta.options = [*existing_objs]
