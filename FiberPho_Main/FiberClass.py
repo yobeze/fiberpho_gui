@@ -1,4 +1,5 @@
 from os import error
+import io
 import sys
 import argparse
 import pandas as pd
@@ -187,7 +188,6 @@ class fiberObj:
         self.start_time = start_time #looking for better names
         self.stop_time = stop_time #looking for better names
         self.file_name = filename
-        self.beh_file = None
         self.beh_filename = 'NaN'
         self.behaviors = set()
         self.channels = set()
@@ -576,14 +576,14 @@ class fiberObj:
     # Behavior Functions
     # ----------------------------------------------------- # 
 
-    def import_behavior_data(self, BORIS_filename, filename):
+    def import_behavior_data(self, file, filename, format_type):
         """
         Takes a file name and returns a dataframe of parsed data
 
         Parameters
         ----------
-        BORIS_filename : string
-            The path to the CSV file
+        file : string
+            String that contains the entire csv file
 
         Returns
         --------
@@ -591,16 +591,10 @@ class fiberObj:
             contains - Time(total msec), Time(sec), 
             Subject, Behavior, Status
         """
-        
-        # Open file, catch errors
-        try:
-            BORIS_data = pd.read_csv(BORIS_filename, header=15)  # starts at data
-        except FileNotFoundError:
-            print("Could not find file: " + BORIS_filename)
-            sys.exit(1)
-        except PermissionError:
-            print("Could not access file: " + BORIS_filename)
-            sys.exit(2)
+        header_idx = file.find('Behavior')
+        header_line = file[:header_idx].count('\n')        
+            
+        BORIS_data = pd.read_csv(io.StringIO(file), header=header_line)  # starts at data
 
         unique_behaviors = BORIS_data['Behavior'].unique()
         for beh in unique_behaviors:
@@ -630,7 +624,6 @@ class fiberObj:
                     print("\nStart and stops for state behavior:" 
                           + beh + " are not paired correctly.\n")
                     sys.exit()
-        self.beh_file = BORIS_filename
         self.beh_filename = filename
         return
 

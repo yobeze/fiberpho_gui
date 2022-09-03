@@ -230,7 +230,7 @@ def run_import_behavior_data(event = None):
         filename = behav_input.filename
         path = io.StringIO(behav.decode("utf8"))
         obj.import_behavior_data(path, filename)
-        fiber_data.loc[obj.obj_name, 'Behavior File'] = filename
+        fiber_data.loc[obj.obj_name, 'Behavior File'] = obj.beh_filename
         info_table.value = fiber_data
         #upload_beh_card.append("Behavior for " + obj.obj_name + " uploaded")
         pn.state.notifications.success('Uploaded Behavior data for '
