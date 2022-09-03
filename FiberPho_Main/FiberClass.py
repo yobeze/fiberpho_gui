@@ -191,6 +191,7 @@ class fiberObj:
         self.beh_filename = 'NaN'
         self.behaviors = set()
         self.channels = set()
+        self.version = 1
         self.color_dict = {'Raw_Green' : 'LawnGreen', 'Raw_Red': 'Red', 'Raw_Isosbestic': 'Cyan',
                            'Green_Normalized': 'MediumSeaGreen', 'Red_Normalized': 'Dark_Red',
                            'Isosbestic_Normalized':'DeepSkyBlue'}
