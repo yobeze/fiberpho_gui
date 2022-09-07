@@ -593,10 +593,12 @@ class fiberObj:
         """
         header_idx = file.find('Behavior')
         header_line = file[:header_idx].count('\n')        
-            
-        BORIS_data = pd.read_csv(io.StringIO(file), header=header_line)  # starts at data
+        
+        BORIS_data = pd.read_csv(io.StringIO(file), header = header_line)  # starts at data
 
         unique_behaviors = BORIS_data['Behavior'].unique()
+        unique_behaviors = [str(i) for i in unique_behaviors]
+        
         for beh in unique_behaviors:
             self.behaviors.add(beh)
             idx_of_beh = [i for i in range(len(BORIS_data['Behavior']
