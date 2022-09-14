@@ -45,10 +45,10 @@ fiber_data = pd.DataFrame(columns = ['Fiber #',
 
 #Read fpho data
 def run_init_fiberobj(event = None):
-    # Use .value param to extract variables elements
+    # .value param to extract variables properly
     value = fpho_input.value
     file_name = fpho_input.filename
-    obj_name = input_1.value_input
+    obj_name = input_1.value
     fiber_num = input_2.value
     animal_num = input_3.value_input
     exp_date = input_4.value_input
@@ -56,54 +56,65 @@ def run_init_fiberobj(event = None):
     start_time = input_6.value #looking for better name
     stop_time = input_7.value #looking for better name
     
-    #Add input params to list for initialization
+     #Add input params to list for initialization
     input_params = []
-    input_params.extend([obj_name, fiber_num, animal_num, exp_date, exp_time,
-                         start_time, stop_time, file_name])
-    if value:
-        try:
-            string_io = io.StringIO(value.decode("utf8"))
-            df = pd.read_csv(string_io) #Read into dataframe
-        except FileNotFoundError:
-            print("Could not find file: " + fpho_input)
-            return
-        except PermissionError:
-            print("Could not access file: " + fpho_input)
-            return
-
-    try:       
+    input_params.extend([obj_name, fiber_num, animal_num,
+                         exp_date, exp_time, start_time, stop_time, file_name])
+    if (input_params[0] in fiber_objs):
+        pn.state.notifications.error(
+            'Error: Please check logger for more info', duration = 4000)
+        print('There is already an object with this name')
+        return
+        
+    try:
+        string_io = io.StringIO(value.decode("utf8"))
+        df = pd.read_csv(string_io) #Read into dataframe
+    except AttributeError:
+        print("Make sure you choose a file")
+        return
+    except PermissionError:
+        print("You do not have permission to access this file")
+        return
+          
+    try:
         #Add to dict if object name does not already exist
-        if (input_params[0] not in fiber_objs):
-            new_obj = fc.fiberObj(df, input_params[0], input_params[1],
-                                  input_params[2], input_params[3],
-                                  input_params[4], input_params[5], 
-                                  input_params[6], input_params[7])
-            #Adds to dict
-            fiber_objs[input_params[0]] = new_obj
-            #Adds to relevant info to dataframe
-            fiber_data.loc[input_params[0]] = ([input_params[1], 
-                                                input_params[2],
-                                                input_params[3], 
-                                                input_params[4],
-                                                input_params[7],
-                                                'NaN'])
-            info_table.value = fiber_data
-            existing_objs = fiber_objs
-            # Updates all cards with new objects
-            update_obj_selectas(existing_objs)
-            #Object created notification
-            pn.state.notifications.success('Created ' + input_params[0]
-                                           + ' object!', duration = 4000)
-        else:
-            pn.state.notifications.error(
-                'Error: Please check logger for more info', duration = 4000)
-            print('There is already an object with this name')
+        new_obj = fc.fiberObj(df, input_params[0], input_params[1],
+                              input_params[2], input_params[3],
+                              input_params[4], input_params[5], 
+                              input_params[6], input_params[7])    
+    except KeyError:
+        logger.error(traceback.format_exc())
+        pn.state.notifications.error(
+            'Error: Please check logger for more information', duration = 4000)  
+        print('It looks like theres something wrong with the format of your file')
+        return
+    except IndexError:
+        logger.error(traceback.format_exc())
+        pn.state.notifications.error(
+            'Error: Please check logger for more information', duration = 4000)  
+        print('Are you sure there are ', input_params[1], ' fibers in this file')
+        return
     except Exception as e:
         logger.error(traceback.format_exc())
         pn.state.notifications.error(
-            'Error: Please check logger for more information',
-            duration = 4000)
+            'Error: Please check logger for more information', duration = 4000)   
         return
+            #Adds to dict
+    fiber_objs[input_params[0]] = new_obj
+    pn.state.notifications.success('Created ' + input_params[0] +
+                                   ' object!', duration = 4000)
+    #Adds to relevant info to dataframe
+    fiber_data.loc[input_params[0]] = ([input_params[1], 
+                                        input_params[2],
+                                        input_params[3], 
+                                        input_params[4],
+                                        input_params[7],
+                                        'NaN'])
+    info_table.value = fiber_data
+    existing_objs = fiber_objs
+    #Updates selectors with new objects
+    update_obj_selectas(existing_objs)
+    return
 
 
 
@@ -164,62 +175,68 @@ def run_delete_fiberobj(event = None):
 
 # Saves selected object to pickle file
 def run_save_fiberobj(event = None):
-    # obj = save_obj_selecta.value
-    try:
-        for obj in save_obj_selecta.value:
+    for obj in save_obj_selecta.value:
+        try:
             temp = fiber_objs[obj]
             with open(obj + '.pickle', 'wb') as handle:
                 pickle.dump(temp, handle)
             pn.state.notifications.success('# ' + temp.obj_name
                                            + ' pickled successfully',
                                            duration = 4000)
-    except Exception as e:
-        pn.state.notifications.error(
-            'Error: Please check logger for more info', duration = 4000)
-        logger.error(traceback.format_exc())
-        print("Error: Cannot save object, please try again.")
+            print(temp.obj_name + " saved")
+        except Exception as e:
+            pn.state.notifications.error(
+                'Error: Please check logger for more info', duration = 4000)
+            logger.error(traceback.format_exc())
+            print("Error: Cannot save object, please try again.")
+            continue
+    return
         
         
 # Creates raw plot pane
 def run_plot_raw_trace(event):
     # .value param to extract variables properly
     selected_objs = obj_selecta.value
-    try:
-        #For len of selected objs, create and plot raw signal graph
-        for objs in selected_objs:
-            temp = fiber_objs[objs]
-            #Creates pane for plotting
-            plot_pane = pn.pane.Plotly(height = 300,
-                                       sizing_mode = "stretch_width") 
-            #Sets figure to plot variable
+    #For len of selected objs, create and plot raw signal graph
+    for objs in selected_objs:
+        temp = fiber_objs[objs]
+        #Creates pane for plotting
+        plot_pane = pn.pane.Plotly(height = 300,
+                                   sizing_mode = "stretch_width")
+        #Sets figure to plot variable
+        try:
             plot_pane.object = temp.raw_signal_trace() 
             plot_raw_card.append(plot_pane) #Add figure to template
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        pn.state.notifications.error(
-            'Error: Please check logger for more info', duration = 4000)
-        return
+        #playsound(correct_chime)
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            pn.state.notifications.error(
+                'Error: Please check logger for more info', duration = 4000)
+            continue
+    return
         
         
 # Creates normalize signal pane
 def run_normalize_a_signal(event = None):
     # .value param to extract variables properly
     selected_objs = norm_selecta.value
-    try:
-        #For len of selected objs, create and plot raw signal graph
-        for objs in selected_objs:
-            temp = fiber_objs[objs]
-            #Creates pane for plotting
-            plot_pane = pn.pane.Plotly(height = 900, sizing_mode = "stretch_width") 
-            #Sets figure to plot variable
+    #For len of selected objs, create and plot raw signal graph
+    for objs in selected_objs:
+        temp = fiber_objs[objs]
+        #Creates pane for plotting
+        plot_pane = pn.pane.Plotly(height = 900,
+                                   sizing_mode = "stretch_width") 
+        #Sets figure to plot variable
+        try:
             plot_pane.object = temp.normalize_a_signal(pick_signal.value,
-                                                       pick_reference.value) 
+                                                   pick_reference.value) 
             norm_sig_card.append(plot_pane) #Add figure to template
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        pn.state.notifications.error(
-            'Error: Please check logger for more info', duration = 4000)
-        return
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            pn.state.notifications.error(
+                'Error: Please check logger for more info', duration = 4000)
+            continue  
+    return
         
 #Read behavior data
 def run_import_behavior_data(event = None):
@@ -228,43 +245,49 @@ def run_import_behavior_data(event = None):
     try:
         behav = behav_input.value
         filename = behav_input.filename
-        path = io.StringIO(behav.decode("utf8"))
-        obj.import_behavior_data(path, filename)
+        file = behav.decode("utf8")
+        obj.import_behavior_data(file, filename, 'place_holder')
         fiber_data.loc[obj.obj_name, 'Behavior File'] = obj.beh_filename
         info_table.value = fiber_data
-        #upload_beh_card.append("Behavior for " + obj.obj_name + " uploaded")
         pn.state.notifications.success('Uploaded Behavior data for '
                                        + obj.obj_name, duration = 4000)
     except FileNotFoundError:
-        print("No file was found")
-        return
+            print("Could not find file: " + BORIS_filename)
+            pn.state.notifications.error(
+            'Error: Please check logger for more info', duration = 4000)
+    except PermissionError:
+            print("Could not access file: " + BORIS_filename)
+            pn.state.notifications.error(
+            'Error: Please check logger for more info', duration = 4000)
     except Exception as e:
         logger.error(traceback.format_exc())
         pn.state.notifications.error(
             'Error: Please check logger for more info', duration = 4000)
         return
+    return
                 
 #Plot behavior on a full trace
 def run_plot_behavior(event = None): 
     selected_objs = plot_beh_selecta.value
-    try:
-        #For len of selected objs, create and plot behavior data
-        for objs in selected_objs:
-            temp = fiber_objs[objs]
-            # if temp.beh_file is None: # Bug: Plot behavior still runs even without behavior file
-            #Creates pane for plotting
-            plot_pane = pn.pane.Plotly(height = 300,
-                                       sizing_mode = "stretch_width")
-            #Sets figure to plot variable
+    #For len of selected objs, create and plot behavior data
+    for objs in selected_objs:
+        temp = fiber_objs[objs]
+        # if temp.beh_file is None: # Bug: Plot behavior still runs even without behavior file
+        #Creates pane for plotting
+        plot_pane = pn.pane.Plotly(height = 500,
+                                   sizing_mode = "stretch_width") 
+        #Sets figure to plot variable
+        try:
             plot_pane.object = temp.plot_behavior(behavior_selecta.value,
-                                                  channel_selecta.value) 
+                                              channel_selecta.value) 
             plot_beh_card.append(plot_pane) #Add figure to template
-            #playsound(audio_chime)
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        pn.state.notifications.error(
-            'Error: Please check logger for more info', duration = 4000)
-        return
+            #playsound(correct_chime)
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            pn.state.notifications.error(
+                'Error: Please check logger for more info', duration = 4000)
+            continue
+    return
 
              
 #Plot zscore of a point evnt
@@ -273,16 +296,16 @@ def run_plot_zscore(event = None):
     baseline_vals = np.array([baseline_start.value, baseline_end.value])
     # How user would like to apply the baseline window input
     baseline_option = baseline_selecta.value
-    try:
         #For len of selected objs, create and plot zscores
-        for objs in selected_objs:
-            temp = fiber_objs[objs]
-            for beh in zbehs_selecta.value:
-                for channel in zchannel_selecta.value:
-                    #Creates pane for plotting
-                    plot_pane = pn.pane.Plotly(height = 500,
-                                               sizing_mode = "stretch_width") 
-                    #Sets figure to plot variable
+    for objs in selected_objs:
+        temp = fiber_objs[objs]
+        for beh in zbehs_selecta.value:
+            for channel in zchannel_selecta.value:
+                #Creates pane for plotting
+                plot_pane = pn.pane.Plotly(height = 500,
+                                           sizing_mode = "stretch_width") 
+                #Sets figure to plot variable
+                try:
                     plot_pane.object = temp.plot_zscore(channel, beh, 
                                                         time_before.value, 
                                                         time_after.value, 
@@ -292,12 +315,14 @@ def run_plot_zscore(event = None):
                                                         last_trace.value,
                                                         show_every.value) 
                     zscore_card.append(plot_pane) #Add figure to template
-                    #playsound(audio_chime)
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        pn.state.notifications.error(
-            'Error: Please check logger for more info', duration = 4000)
-        return
+                    #playsound(correct_chime)
+                except Exception as e:
+                    logger.error(traceback.format_exc())
+                    pn.state.notifications.error(
+                        'Error: Please check logger for more info', duration = 4000)
+                    continue
+
+    return
                 
 # Runs the pearsons correlation coefficient
 def run_pearsons_correlation(event = None):
@@ -317,32 +342,36 @@ def run_pearsons_correlation(event = None):
                                                      channel1, channel2,
                                                      start, end)
         pearsons_card.append(plot_pane) #Add figure to template
+    except ValueError:
+        return
     except Exception as e:
         logger.error(traceback.format_exc())
         pn.state.notifications.error(
             'Error: Please check logger for more info', duration = 4000)
         return
+    return
 
 def run_beh_specific_pearsons(event = None):
-    try:
-        for channel in beh_corr_channel_selecta.value:
-            for behavior in beh_corr_behavior_selecta.value:
-                name1 = beh_corr_selecta1.value
-                name2 = beh_corr_selecta2.value
-                obj1 = fiber_objs[name1]
-                obj2 = fiber_objs[name2]
-                #Creates pane for plot
-                plot_pane = pn.pane.Plotly(height = 300,
-                                           sizing_mode = "stretch_width") 
+    for channel in beh_corr_channel_selecta.value:
+        for behavior in beh_corr_behavior_selecta.value:
+            name1 = beh_corr_selecta1.value
+            name2 = beh_corr_selecta2.value
+            obj1 = fiber_objs[name1]
+            obj2 = fiber_objs[name2]
+            #Creates pane for plot
+            plot_pane = pn.pane.Plotly(height = 300,
+                                       sizing_mode = "stretch_width")
+            try:
                 plot_pane.object = obj1.behavior_specific_pearsons(obj2,
                                                                    channel, 
                                                                    behavior)
                 beh_corr_card.append(plot_pane) #Add figure to template 
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        pn.state.notifications.error(
-            'Error: Please check logger for more info', duration = 4000)
-        return
+            except Exception as e:
+                logger.error(traceback.format_exc())
+                pn.state.notifications.error(
+                    'Error: Please check logger for more info', duration = 4000)
+                continue 
+    return
         
 
 #Updates available signal options based on selected object
@@ -403,6 +432,8 @@ def update_selecta_options(event = None):
     available_behaviors = obj1.behaviors & obj2.behaviors
     beh_corr_channel_selecta.options = list(available_channels)
     beh_corr_behavior_selecta.options = list(available_behaviors)
+    
+    return
     
 # Clear plots by card function
 def clear_plots(event):
