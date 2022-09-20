@@ -100,16 +100,28 @@ class test_behav(unittest.TestCase):
 
         # Import Pickles for correlation testing
         # Pickle file paths
-#         infile_1 = "/Users/yobae/Desktop/CS Stuff/fiberobj_panel/Yobe_GUI/fiberpho_gui/tests/src/pickles/pkl_sample_1A.pickle"
-#         # infile_2 = "/Users/yobae/Desktop/CS Stuff/fiberobj_panel/Yobe_GUI/fiberpho_gui/tests/src/pickles/pkl_sample_1B"
+        infile_1 = "/Users/yobae/Desktop/CS Stuff/fiberobj_panel/Yobe_GUI/fiberpho_gui/tests/src/pickles/pkl_test_1A.pickle"
+        infile_2 = "/Users/yobae/Desktop/CS Stuff/fiberobj_panel/Yobe_GUI/fiberpho_gui/tests/src/pickles/pkl_test_1B.pickle"
+        infile_3 = "/Users/yobae/Desktop/CS Stuff/fiberobj_panel/Yobe_GUI/fiberpho_gui/tests/src/pickles/pkl_test_2A.pickle"
+        infile_4 = "/Users/yobae/Desktop/CS Stuff/fiberobj_panel/Yobe_GUI/fiberpho_gui/tests/src/pickles/pkl_test_2B.pickle"
 
-#         pkl_file_1 = open(infile_1, 'rb')
-#         self.pkl_1 = pickle.load(pkl_file_1)
-#         pkl_file_1.close()
+        pkl_file_1 = open(infile_1, 'rb')
+        self.pkl_1 = pickle.load(pkl_file_1)
+        pkl_file_1.close()
         
-#         pkl_file_2 = open(infile_2, 'rb')
-#         self.pkl_2 = pickle.load(pkl_file_2)
-#         pkl_file_2.close()
+        pkl_file_2 = open(infile_2, 'rb')
+        self.pkl_2 = pickle.load(pkl_file_2)
+        pkl_file_2.close()
+        
+        pkl_file_3 = open(infile_3, 'rb')
+        self.pkl_3 = pickle.load(pkl_file_3)
+        pkl_file_3.close()
+        
+        pkl_file_4 = open(infile_4, 'rb')
+        self.pkl_4 = pickle.load(pkl_file_4)
+        pkl_file_4.close()
+        
+        
         
         
 #     def test_import_beh(self):
@@ -136,6 +148,42 @@ class test_behav(unittest.TestCase):
         # self.assertRaises(KeyError, lambda: self.test_obj_4.import_behavior_data(beh_data_4, "Sample_Beh_4", 'place_holder'))
         
         
+        
+    # Test for Plot Behavior
+    def test_plot_beh(self):
+        """
+        Parameters
+        ----------
+        None
+        
+        Returns
+        ----------
+        Error if no instance of a graph is returned or an error arises,
+        otherwise returns OK
+        """
+        # Error message to relay if test case fails
+        msg = "Plot Behavior function failed to return a plot"
+        # Test Case
+        channels = ["Raw_Green", "Raw_Isosbestic", "Raw_Red"]
+        behs = ['m', 'i', 'g'] # Note some fiber objs may have extra beh options
+        
+        # self.assertIsInstance(self.test_obj.plot_behavior
+        #                       (random.choice(behs),
+        #                        random.choice(channels)), msg)
+                              
+#         self.assertIsInstance(self.pkl_1.plot_behavior
+#                               (random.choice(behs),
+#                                random.choice(channels)), msg)
+                              
+#         self.assertIsInstance(self.pkl_2.plot_behavior
+#                               (random.choice(behs),
+#                                random.choice(channels)), msg)
+                              
+#         self.assertIsInstance(self.pkl_3.plot_behavior
+#                               (random.choice(behs),
+#                                random.choice(channels)), msg)
+        
+        
     # Test for Z-Score Plot
     def test_zscore(self):
         """
@@ -145,12 +193,13 @@ class test_behav(unittest.TestCase):
 
         Returns
         ----------
-        Error if no instance of a graph or an problem occurred in the function call, otherwise returns an OK
+        Error if no instance of a graph is returned or an error arises,
+        otherwise returns OK
         """
         # Error to relay if test case fails
         msg = "Zscore function failed to return a plot"
         # Test Case
-        # This checks if the function will return a plot correctly
+        # Random select behaviors and signals for req positional arguments
         channels = ["Raw_Green", "Raw_Isosbestic", "Raw_Red"]
         behs = ['m', 'i', 'g'] # Note test_obj_2 has behavior 'f' as well
         # # Raises Error: Local variable x referenced before assignment
@@ -163,8 +212,20 @@ class test_behav(unittest.TestCase):
         #                       (random.choice(channels), random.choice(behs), 2, 5), 
         #                       plotly.graph_objs._figure.Figure, msg)
         
-        self.assertIsInstance(self.test_obj_4.plot_zscore
-                              (random.choice(channels), random.choice(behs), 2, 5), 
+        # self.assertIsInstance(self.test_obj_4.plot_zscore
+        #                       (random.choice(channels), random.choice(behs), 2, 5), 
+        #                       plotly.graph_objs._figure.Figure, msg)
+        
+        self.assertIsInstance(self.pkl_1.plot_zscore
+                              (random.choice(channels), random.choice(behs), 2, 5),
+                              plotly.graph_objs._figure.Figure, msg)
+                              
+        self.assertIsInstance(self.pkl_2.plot_zscore
+                              (random.choice(channels), random.choice(behs), 2, 5),
+                              plotly.graph_objs._figure.Figure, msg)
+                              
+        self.assertIsInstance(self.pkl_3.plot_zscore
+                              (random.choice(channels), random.choice(behs), 2, 5),
                               plotly.graph_objs._figure.Figure, msg)
         
     # Test for Pearsons Correlation
@@ -178,38 +239,48 @@ class test_behav(unittest.TestCase):
         ----------
         Error if no instance of a graph or an problem occurred in the function call, otherwise returns an OK
         """
-        pass
-        # msg = "Pearsons function failed to return a plot"
-        # channels = ["Raw_Green", "Raw_Isosbestic", "Raw_Red"]
-        # # Test Case
-        # self.assertIsInstance(self.pkl_1.pearsons_correlation
-        #                       (self.pkl_2, random.choice(channels),
-        #                        random.choice(channels), 0, -1),
-        #                        plotly.graph_objs._figure.Figure, msg)
-
+        msg = "Pearsons function failed to return a plot"
+        channels = ["Raw_Green", "Raw_Isosbestic", "Raw_Red"]
+        # Test Case
+        self.assertIsInstance(self.pkl_1.pearsons_correlation
+                              (self.pkl_2, random.choice(channels),
+                               random.choice(channels), 0, -1),
+                               plotly.graph_objs._figure.Figure, msg)
+        
+        
+        self.assertIsInstance(self.pkl_3.pearsons_correlation
+                              (self.pkl_4, random.choice(channels),
+                               random.choice(channels), 0, -1),
+                               plotly.graph_objs._figure.Figure, msg)
         # print(self.pkl_1.correlation_results.head())
         
         
 #     # Test for Behavior specific Pearsons
-#     def test_beh_pearsons(self):
-#         """
-#         Parameters
-#         ----------
-#         None
+    def test_beh_pearsons(self):
+        """
+        Parameters
+        ----------
+        None
 
-#         Returns
-#         ----------
-#         Error if no instance of a graph or an problem occurred in the function call, otherwise returns an OK
-#         """
-#         msg = "Behavior specific Pearsons function failed to return a plot"
-#         channels = ["Raw_Green", "Raw_Isosbestic", "Raw_Red"]
-#         behs = ['m', 'i', 'g'] # Note test_obj_2 has behavior 'f' as well
-#         # Test Case
-#         self.assertIsInstance(self.pkl_1.behavior_specific_pearsons
-#                               (self.pkl_2, random.choice(channels), random.choice(behs)),
-#                               plotly.graph_objs._figure.Figure, msg)
+        Returns
+        ----------
+        Error if no instance of a graph or an problem occurred in the function call, otherwise returns an OK
+        """
+        msg = "Behavior specific Pearsons function failed to return a plot"
+        channels = ["Raw_Green", "Raw_Isosbestic", "Raw_Red"]
+        behs = ['m', 'i', 'g'] # Note test_obj_2 has behavior 'f' as well
+        # Test Case
+        self.assertIsInstance(self.pkl_1.behavior_specific_pearsons
+                              (self.pkl_2, random.choice(channels),
+                               random.choice(behs)),
+                               plotly.graph_objs._figure.Figure, msg)
+        
+        self.assertIsInstance(self.pkl_3.behavior_specific_pearsons
+                              (self.pkl_4, random.choice(channels),
+                               random.choice(behs)),
+                               plotly.graph_objs._figure.Figure, msg)
 
-#         print(self.pkl_1.beh_corr_results.head())
+        # print(self.pkl_1.beh_corr_results.head())
                               
                               
 if __name__ == '__main__':
