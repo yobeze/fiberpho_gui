@@ -290,7 +290,8 @@ def run_plot_zscore(event = None):
                                                         baseline_option,
                                                         first_trace.value,
                                                         last_trace.value,
-                                                        show_every.value) 
+                                                        show_every.value,
+                                                        save_csv.value) 
                     zscore_card.append(plot_pane) #Add figure to template
                     #playsound(audio_chime)
     except Exception as e:
@@ -825,6 +826,8 @@ plot_beh_card = pn.Card(plot_beh_widget, clear_beh,
 #Plot Z-Score
 
 #Input variables
+save_csv = pn.widgets.Checkbox(name='Save CSV')
+
 zscore_selecta = pn.widgets.MultiSelect(name = 'Fiber Objects', value = [],
                                         options = [], )
 zbehs_selecta = pn.widgets.MultiSelect(name = 'Behavior', value = [],
@@ -897,7 +900,7 @@ tabs = pn.Tabs(('Z-Score', zscore_options),
                ('Baseline Options', baseline_options), 
                ('Reduce Displayed Traces', trace_options))
 zscore_widget = pn.WidgetBox(zscore_info, tabs)
-zscore_card = pn.Card(zscore_widget, clear_zscore,
+zscore_card = pn.Card(zscore_widget, clear_zscore, save_csv,
                       title = 'Zscore Plot', background = 'WhiteSmoke',
                       width = 600, collapsed = True)
 

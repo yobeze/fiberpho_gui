@@ -19,13 +19,13 @@ import re
 
 pn.extension('terminal')
 
-def lick_to_boris(lick_file):
+def lick_to_boris(beh_file):
     """
     Converts lickometer data to a BORIS file that is readable by the GUI
 
     Parameters
     ----------
-    lick_file : file
+    beh_file : file
         uploaded lickometer file
 
     Returns
@@ -33,44 +33,40 @@ def lick_to_boris(lick_file):
     boris : Dataframe
         converted data for download
     """
-    trimmed = lick_file[lick_file['Licks'] != 0]
+    boris_df = pd.DataFrame(columns = ['Time', 'Behavior', 'Status'])
+    conversion_to_sec = 1/1000
+    behaviors = ['Licks']
+    beh_false = 0
+    time_between_bouts = 0.5 # in sec
+    
+    for beh in behaviors:
+        trimmed = beh_file[beh_file[beh] != beh_false]
+        starts = [(trimmed.iloc[0]['Time'] - beh_file.iloc[0]['Time']) * conversion_to_sec]
+        stops = []
+        diffs = np.diff(trimmed.index)
 
-    starts = [(trimmed.iloc[0]['Time'] - lick_file.iloc[0]['Time']) / 1000]
-    stops = []
-    diffs = np.diff(trimmed.index)
+        for i, v in enumerate(diffs):
+            if v > (time_between_bouts / conversion_to_sec):
+                stops.append((trimmed.iloc[i]['Time'] 
+                              - beh_file.iloc[0]['Time']) * conversion_to_sec)
+                if i+1 < len(diffs):
+                    starts.append((trimmed.iloc[i+1]['Time'] 
+                                   - beh_file.iloc[0]['Time']) * conversion_to_sec)
+        stops.append((trimmed.iloc[-1]['Time'] 
+                      - beh_file.iloc[0]['Time']) * conversion_to_sec)
 
-    for i, v in enumerate(diffs):
-        if v > 500:
-            stops.append((trimmed.iloc[i]['Time'] 
-                          - lick_file.iloc[0]['Time']) / 1000)
-            if i+1 < len(diffs):
-                starts.append((trimmed.iloc[i+1]['Time'] 
-                               - lick_file.iloc[0]['Time']) / 1000)
-    stops.append((trimmed.iloc[-1]['Time'] 
-                  - lick_file.iloc[0]['Time']) / 1000)
-
-    time = starts + stops
-    time.sort()
-
-    status = ['START'] * len(time)
-    half = len(time) / 2
-    status[1::2] = ['STOP'] * int(half)
-    behavior = ['Lick'] * len(time)
-
-
-    time = [0]*14 + ['Time'] + time
-    media = ['n/a'] * len(time)
-    total = ['n/a'] * len(time)
-    FPS = ['n/a'] * len(time)
-    subject = ['n/a'] * len(time)
-    behavior = [0]*14 + ['Behavior'] + behavior
-    beh_cat = ['n/a'] * len(time)
-    comment = ['n/a'] * len(time)
-    status = [0]*14 + ['Status'] + status
-
-    boris = pd.DataFrame([time, media, total, FPS, subject, behavior, beh_cat,
-                          comment, status])
-    boris = boris.transpose()
+        time = starts + stops
+        time.sort()
+        status = ['START'] * len(time)
+        half = len(time) / 2
+        status[1::2] = ['STOP'] * int(half)
+        behavior = [beh] * len(time)
+        time = ['Time'] + time
+        behavior = ['Behavior'] + behavior
+        status = ['Status'] + status
+        beh_df = pd.DataFrame([time, behavior, status])
+        beh_df = beh_df.transpose()
+        boris_df.merge(beh_df)      
     return boris
 
 
@@ -633,10 +629,10 @@ class fiberObj:
         
         Parameters
         ----------
-        behaviors : string
+        behaviors : list
             user selected behaviors
         
-        channels : string
+        channels : list
             user selected channels
             
         Returns
@@ -704,7 +700,7 @@ class fiberObj:
     
     def plot_zscore(self, channel, beh, time_before, time_after,
                     baseline = 0, base_option = 0, show_first = -1,
-                    show_last = 0, show_every = 1):
+                    show_last = 0, show_every = 1, save_csv = False):
         
         """
         Takes a dataframe and creates plot of z-scores for
@@ -771,7 +767,7 @@ class fiberObj:
             )
 
         # Initialize array of zscore sums
-        Zscore_sum = []
+        Zscore_data = pd.DataFrame()
         # Initialize events counter to 0
         n_events = 0
         
@@ -848,13 +844,8 @@ class fiberObj:
                 trace = self.fpho_data_df.loc[
                     start_idx : end_idx, channel].values.tolist()
                 this_Zscore=self.zscore(trace, base_mean, base_std)
-                if len(Zscore_sum)>1:
-                    # Sums values at each index
-                    Zscore_sum = [Zscore_sum[i] + this_Zscore[i] 
-                                 for i in range(len(trace))]
-                else:
-                    # First value
-                    Zscore_sum = this_Zscore
+                # Adds each trace to a dict
+                Zscore_data['event' + str(n_events)] = this_Zscore 
 
                 if show_first == -1 or i in np.arange(show_first, show_last, show_every):
                     # Times for this event trace
@@ -880,10 +871,34 @@ class fiberObj:
                         showlegend=True), 
                         row = 1, col = 2
                         )
-        avg_Zscore = [i / n_events for i in Zscore_sum]  
-        graph_time = np.linspace(-time_before, time_after, num = len(x))
+        avg_Zscore = Zscore_data.mean(axis=1).to_list()
+        sem_Zscore = Zscore_data.sem(axis=1).to_list()
+        graph_time = np.linspace(-time_before, time_after,
+                                 num = len(avg_Zscore)).tolist()
+        Zscore_data.insert(0, 'time', graph_time)
+        Zscore_data.insert(1, 'Average', avg_Zscore)
+        Zscore_data.insert(2, 'SEM', sem_Zscore)
+        Zscore_data.insert(3, 'SEM Upper Bound', Zscore_data['Average'] + Zscore_data['SEM'])
+        Zscore_data.insert(4, 'SEM Lower Bound', Zscore_data['Average'] - Zscore_data['SEM'])
+        upper_bound = Zscore_data['SEM Upper Bound'].to_list()
+        lower_bound = Zscore_data['SEM Lower Bound'].to_list()
         zero_idx = np.searchsorted(graph_time, 0)
         fig.add_vline(x = 0, line_dash = "dot", row = 1, col = 2)
+        fig.add_trace(
+            # Scatter plot
+            go.Scatter( 
+            # Times for baseline window
+            x = graph_time + graph_time[::-1],
+            # Y = SEM
+            y = upper_bound + lower_bound[::-1],
+            fill= 'toself',
+            fillcolor =  'rgba(255, 255, 255, 0.8)',
+            line=dict(color='rgba(255,255,255,0)'),
+            name = 'SEM',
+            text = 'SEM',
+            showlegend = True),
+            row = 1, col = 2
+            )
         # Adds trace
         fig.add_trace(
             # Scatter plot
@@ -915,6 +930,9 @@ class fiberObj:
                    'Number of events' : n_events, 'Z_score Baseline' : zscore_baseline}
         print(results)
         self.z_score_results = self.z_score_results.append(results, ignore_index = True)
+        if save_csv:
+            Zscore_data.to_csv(self.obj_name + '_' + channel + '_' + beh +
+                               '_Baseline_' + zscore_baseline + '.csv') 
         return fig
         
         
