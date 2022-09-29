@@ -33,9 +33,8 @@ test_beh_pearsons():
 
 -----    
 TODO:
-Modify normalize sig function to actually check if signals 
-have been normalized! 
-Update ---- Sort of got the idea? Check w Kathleen
+Get new fiberpho files
+Find out 
 -----  
 """
 
@@ -168,12 +167,12 @@ class test_behav(unittest.TestCase):
         behs = ['m', 'i', 'g'] # Note some fiber objs may have extra beh options
         
         # self.assertIsInstance(self.test_obj.plot_behavior
+        #                       (behs,
+        #                        channels), msg)
+                              
+        # self.assertIsInstance(self.pkl_1.plot_behavior
         #                       (random.choice(behs),
         #                        random.choice(channels)), msg)
-                              
-#         self.assertIsInstance(self.pkl_1.plot_behavior
-#                               (random.choice(behs),
-#                                random.choice(channels)), msg)
                               
 #         self.assertIsInstance(self.pkl_2.plot_behavior
 #                               (random.choice(behs),
@@ -255,7 +254,7 @@ class test_behav(unittest.TestCase):
         # print(self.pkl_1.correlation_results.head())
         
         
-#     # Test for Behavior specific Pearsons
+    # Test for Behavior specific Pearsons
     def test_beh_pearsons(self):
         """
         Parameters
