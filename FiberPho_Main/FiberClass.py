@@ -589,12 +589,10 @@ class fiberObj:
         """
         header_idx = file.find('Behavior')
         header_line = file[:header_idx].count('\n')        
-        
-        BORIS_data = pd.read_csv(io.StringIO(file), header = header_line)  # starts at data
+            
+        BORIS_data = pd.read_csv(io.StringIO(file), header=header_line)  # starts at data
 
         unique_behaviors = BORIS_data['Behavior'].unique()
-        unique_behaviors = [str(i) for i in unique_behaviors]
-        
         for beh in unique_behaviors:
             self.behaviors.add(beh)
             idx_of_beh = [i for i in range(len(BORIS_data['Behavior']
@@ -812,8 +810,8 @@ class fiberObj:
 
 
         # Loops over all start times for this behavior
-        # i = index, time = actual time
-        for i, time in enumerate(beh_times):
+        #  time = actual time
+        for time in beh_times:
             # Calculates indices for baseline window before each event
             if base_option and base_option[0] == 'Before Events':
                 start = max(baseline)
@@ -849,12 +847,12 @@ class fiberObj:
                 # Adds each trace to a dict
                 Zscore_data['event' + str(n_events)] = this_Zscore 
 
-                if show_first == -1 or i in np.arange(show_first, show_last, show_every):
+                if show_first == -1 or n_events in np.arange(show_first, show_last, show_every):
                     # Times for this event trace
                     x = self.fpho_data_df.loc[start_idx : end_idx, 'time_Green']
                     # Trace color (First event blue, last event red)
                     trace_color = 'rgb(' + str(
-                        int((i+1) * 255/(len(beh_times)))) + ', 0, 255)'
+                        int((n_events+1) * 255/(len(beh_times)))) + ', 0, 255)'
                     # Adds a vertical line for each event time
                     fig.add_vline(x = time, line_dash = "dot", row = 1, col = 1)
                     # Adds trace for each event
@@ -868,8 +866,8 @@ class fiberObj:
                         y = this_Zscore, 
                         mode = "lines",
                         line = dict(color = trace_color, width = 2),
-                        name = 'Event:' + str(i),
-                        text = 'Event:' + str(i),
+                        name = 'Event:' + str(n_events),
+                        text = 'Event:' + str(n_events),
                         showlegend=True), 
                         row = 1, col = 2
                         )
