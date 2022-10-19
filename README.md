@@ -15,8 +15,8 @@ https://pip.pypa.io/en/stable/installation/
 - Click on the green button labeled "Code" located at the top right corner of this repository and click on Download ZIP (Ensure that this file is saved locally on your device, in other words not on any cloud environments).
 - Go to the downloaded zip file on your device and place it somewhere convenient to you so that you may easily navigate to it, again avoiding cloud storage.
 - Unzip the file by clicking on it or using an unzipping utility (e.g. WinRAR), and take note of the FiberPho_Main folder's path, we will need this later.)
-    - Mac/Unix: Right click folder &rarr Hold Option key &rarr Click Copy "fiberpho_gui" as Pathname.
-    - Windows: Right click folder &rarr Properties &rarr Take note of text next to "Location:"
+    - Mac/Unix: Right click folder &rarr; Hold Option key &rarr; Click Copy "fiberpho_gui" as Pathname.
+    - Windows: Right click folder &rarr; Properties &rarr; Take note of text next to "Location:"
 
 2. Create Virtual Environment
     > We will be creating a virtual environment to ensure that there are no issues with any currently installed python packages/modules. You only need to complete these steps once. You may install the GUI using either Anaconda or PIP/PyPI. We recommend using Anaconda to utilize Jupyter Notebook for ease of use and inline error logging. The instructions for both are below:
