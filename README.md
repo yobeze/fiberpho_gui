@@ -15,7 +15,7 @@ https://pip.pypa.io/en/stable/installation/
 - Click on the green button labeled "Code" located at the top right corner of this repository and click on Download ZIP (Ensure that this file is saved locally on your device, in other words not on any cloud environments).
 - Go to the downloaded zip file on your device and place it somewhere convenient to you so that you may easily navigate to it, again avoiding cloud storage.
 - Unzip the file by clicking on it or using an unzipping utility (e.g. WinRAR), and take note of the FiberPho_Main folder's path, we will need this later.)
-    - Mac/Unix: Right click folder &rarr; Hold Option key &rarr; Click Copy "fiberpho_gui" as Pathname.
+    - Mac/Unix: Right click folder &rarr; Hold Option key &rarr; Click Copy "FiberPho_Main" as Pathname.
     - Windows: Right click folder &rarr; Properties &rarr; Take note of text next to "Location:"
 
 2. Create Virtual Environment
