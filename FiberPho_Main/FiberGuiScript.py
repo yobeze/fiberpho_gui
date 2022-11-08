@@ -8,7 +8,7 @@ import pandas as pd
 import csv
 import numpy as np
 import os
-import random
+
 import sys
 import ipywidgets as ipw
 import time
@@ -30,9 +30,10 @@ Command to run script:
     Notebook : panel serve FiberGuiNotebook.ipynb --websocket-max-message-size=104876000 --show
 '''
 
-pn.extension('plotly')
+#current obj version
+current_version = 1
 pn.extension('terminal', notifications = True, sizing_mode = 'stretch_width')
-
+pn.extension('plotly')
 #Dictionary of fiber objects
 fiber_objs = {}
 #Dataframe of object's info
@@ -138,7 +139,11 @@ def run_upload_fiberobj(event = None):
                                               temp.file_name,
                                               temp.beh_filename])
             info_table.value = fiber_data
-
+            if not hasattr(temp_obj, 'version') and temp_obj != current_version:
+                pn.state.notifications.error(
+                'Warning: Please check logger for more info', duration = 4000)
+                print("This pickle file is out of date." + 
+                    "It may cause problems in certain functions")
         existing_objs = fiber_objs
         # Updates all cards with new objects
         update_obj_selectas(existing_objs)
@@ -155,23 +160,21 @@ def run_upload_fiberobj(event = None):
         
 # Saves selected object to pickle file
 def run_delete_fiberobj(event = None):
-    # obj = delete_obj_selecta.value
-    try:
-        for obj in delete_obj_selecta.value:
-            pn.state.notifications.warning('Deleting ' + obj + ' object!',
-                                           duration = 4000)
+    for obj in delete_obj_selecta.value:
+        try:
             del fiber_objs[obj]
-            fiber_data.drop([obj], axis = 0, inplace = True)
-            
-        info_table.value = fiber_data
-        existing_objs = fiber_objs
-        # Updates all cards with new objects
-        update_obj_selectas(existing_objs)
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        pn.state.notifications.error(
-            'Error: Please check logger for more info', duration = 4000)
-        print("Error: Cannot delete object, please try again.")
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            pn.state.notifications.error(
+                'Error: Please check logger for more info', duration = 4000)
+            print("Error: Cannot delete " + obj + ", please try again.")
+            continue
+        fiber_data.drop([obj], axis = 0, inplace = True)
+    info_table.value = fiber_data
+    existing_objs = fiber_objs
+    # Updates all cards with new objects
+    update_obj_selectas(existing_objs)
+    return
 
 # Saves selected object to pickle file
 def run_save_fiberobj(event = None):
@@ -313,8 +316,7 @@ def run_plot_zscore(event = None):
                                                         baseline_option,
                                                         first_trace.value,
                                                         last_trace.value,
-                                                        show_every.value,
-                                                        save_csv.value) 
+                                                        show_every.value) 
                     zscore_card.append(plot_pane) #Add figure to template
                     #playsound(correct_chime)
                 except Exception as e:
@@ -515,58 +517,68 @@ def run_convert_lick(event):
 def run_download_results(event):
     for types in result_type_selecta.value:
         results = pd.DataFrame()
-        if types == 'Zscore Results':
-            results = pd.concat([fiber_objs[name].z_score_results
-                                for name in results_selecta.value],
-                                ignore_index=True)
-            results.to_csv(output_name.value + '_zscore_results.csv')
-            pn.state.notifications.success(output_name.value +
-                                           'Z-Score results downloaded',
-                                           duration = 4000)
-            print('Z-Score results saved locally to: ' +
-                  output_name.value + '_zscore_results.csv')
-        if types == 'Correlation Results':
-            results = pd.concat([fiber_objs[name].correlation_results
-                                for name in results_selecta.value],
-                                ignore_index=True)
-            results.to_csv(output_name.value + '_correlation_results.csv')
-            pn.state.notifications.success(output_name.value +
-                                           'Correlation results downloaded',
-                                           duration = 4000)
-            print('Correlation results saved locally to: ' +
-                  output_name.value + '_correlation_results.csv')
-        if types == 'Behavior Specific Correlation Reuslts':
-            results = pd.concat([fiber_objs[name].beh_corr_results
-                                for name in results_selecta.value],
-                                ignore_index=True)
-            results.to_csv(output_name.value +
-                           '_behavior_correlation_results.csv')
-            pn.state.notifications.success(output_name.value +
-                                           'Behavior Correlation results downloaded',
-                                           duration = 4000)
-            print('Behavior Correlation results saved locally to: ' + 
-                  output_name.value + '_behavior_correlation_results.csv')
-
+        try:
+            if types == 'Zscore Results':
+                results = pd.concat([fiber_objs[name].z_score_results
+                                    for name in results_selecta.value],
+                                    ignore_index=True)
+                results.to_csv(output_name.value + '_zscore_results.csv')
+                pn.state.notifications.success(output_name.value +
+                                            'Z-Score results downloaded',
+                                            duration = 4000)
+                print('Z-Score results saved locally to: ' +
+                    output_name.value + '_zscore_results.csv')
+            if types == 'Correlation Results':
+                results = pd.concat([fiber_objs[name].correlation_results
+                                    for name in results_selecta.value],
+                                    ignore_index=True)
+                results.to_csv(output_name.value + '_correlation_results.csv')
+                pn.state.notifications.success(output_name.value +
+                                            'Correlation results downloaded',
+                                            duration = 4000)
+                print('Correlation results saved locally to: ' +
+                    output_name.value + '_correlation_results.csv')
+            if types == 'Behavior Specific Correlation Reuslts':
+                results = pd.concat([fiber_objs[name].beh_corr_results
+                                    for name in results_selecta.value],
+                                    ignore_index=True)
+                results.to_csv(output_name.value +
+                            '_behavior_correlation_results.csv')
+                pn.state.notifications.success(output_name.value +
+                                            'Behavior Correlation results downloaded',
+                                            duration = 4000)
+                print('Behavior Correlation results saved locally to: ' + 
+                    output_name.value + '_behavior_correlation_results.csv')
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            pn.state.notifications.error(
+                'Error: Please check logger for more info', duration = 4000
+            )
+            continue
+    return
 def update_obj_selectas(existing_objs):
     #Updates selectors with new objects
-            obj_selecta.options = [*existing_objs]
-            norm_selecta.options = [*existing_objs]
-            behav_selecta.options = [*existing_objs]
-            plot_beh_selecta.options = [*existing_objs]
-            zscore_selecta.options = [*existing_objs]
-            pearsons_selecta1.options = [*existing_objs]
-            pearsons_selecta2.options = [*existing_objs]
-            beh_corr_selecta1.options = [*existing_objs]
-            beh_corr_selecta2.options = [*existing_objs]
-            save_obj_selecta.options = [*existing_objs]
-            delete_obj_selecta.options = [*existing_objs]
-            results_selecta.options = [*existing_objs]
+    obj_selecta.options = [*existing_objs]
+    norm_selecta.options = [*existing_objs]
+    behav_selecta.options = [*existing_objs]
+    plot_beh_selecta.options = [*existing_objs]
+    zscore_selecta.options = [*existing_objs]
+    pearsons_selecta1.options = [*existing_objs]
+    pearsons_selecta2.options = [*existing_objs]
+    beh_corr_selecta1.options = [*existing_objs]
+    beh_corr_selecta2.options = [*existing_objs]
+    save_obj_selecta.options = [*existing_objs]
+    delete_obj_selecta.options = [*existing_objs]
+    results_selecta.options = [*existing_objs]
+    return
 
 
 # ----------------------------------------------------- # 
 # Error logger
-terminal = pn.widgets.Terminal(options = {"cursorBlink": False}, height = 200,
-                               sizing_mode = 'stretch_width')
+terminal = pn.widgets.Terminal(
+    options = {"cursorBlink": False}, 
+    height = 200,
+    sizing_mode = 'stretch_width')
 sys.stdout = terminal
 # Logger settings
 logger = logging.getLogger("terminal")
@@ -584,7 +596,7 @@ logger.addHandler(stream_handler)
 clear_logs = pn.widgets.Button(name = 'Clear Logs', button_type = 'danger', 
                                height = 30, width = 40,
                                sizing_mode = 'fixed', align = 'end')
-# Doesn't work rn for some reason
+
 clear_logs.on_click(terminal.clear)
 
 logger_info = pn.pane.Markdown(""" ##Logger
@@ -599,16 +611,16 @@ log_card = pn.Card(pn.Row(logger_info, clear_logs), terminal, title = 'Logs',
 
 #Input variables
 input_1 = pn.widgets.TextInput(name = 'Object Name', width = 80,
-                               placeholder = 'String')
+                               value = 'Obj1')
 input_2 = pn.widgets.IntInput(name = 'Fiber Number', start = 1,
-                              end = 16, width = 80, placeholder = '1-16')
+                              end = 16, width = 80, value = 'Int')
 input_3 = pn.widgets.TextInput(name = 'Animal Number', width = 80,
                                placeholder = 'String')
 input_4 = pn.widgets.TextInput(name = 'Exp Date', width = 80,
                                placeholder = 'Date')
 input_5 = pn.widgets.TextInput(name = 'Exp Time', width = 80,
                                placeholder = 'Time')
-input_6 = pn.widgets.IntInput(name = 'Exclude time from the beginning',
+input_6 = pn.widgets.IntInput(name = 'Exclude time from the beginning of recording',
                                width = 90, placeholder = 'Seconds',
                               value = 0) #looking for better name
 input_7 = pn.widgets.IntInput(name = 'Stop time from the beginning',
@@ -621,12 +633,13 @@ fpho_input = pn.widgets.FileInput(name = 'Upload FiberPho Data',
 
 #Buttons
 upload_button = pn.widgets.Button(name = 'Create Object',
-                                  button_type = 'primary', width = 300,
-                                  sizing_mode = 'stretch_width')
+                                  button_type = 'primary',
+                                  width = 500, sizing_mode = 'stretch_width',
+                                  align = 'end')
 upload_button.on_click(run_init_fiberobj) #Button action
 
 #Box
-init_obj_box = pn.WidgetBox('# Create Object', fpho_input,
+init_obj_box = pn.WidgetBox('# Input Params', fpho_input,
                             input_col, upload_button)
 
 # ----------------------------------------------------- # 
@@ -639,9 +652,9 @@ upload_pkl_selecta = pn.widgets.FileInput(name = 'Upload Saved Fiber Objects',
                                           accept = '.pickle', multiple = True) 
 
 #Buttons
-upload_pkl_btn = pn.widgets.Button(name = 'Upload Object', 
-                                   button_type = 'primary', width = 400, 
-                                   sizing_mode = 'stretch_width',
+upload_pkl_btn = pn.widgets.Button(name = 'Upload Object(s)', 
+                                   button_type = 'primary', 
+                                   width = 500, sizing_mode = 'stretch_width',
                                    align = 'end')
 upload_pkl_btn.on_click(run_upload_fiberobj) #Button action
 
@@ -666,7 +679,7 @@ delete_obj_btn = pn.widgets.Button(name = 'Delete Object',
 delete_obj_btn.on_click(run_delete_fiberobj) #Button action
 
 #Box
-delete_obj_box = pn.WidgetBox('# Delete Fiber Objects', 
+delete_obj_box = pn.WidgetBox('# Delete unwanted Fiber Objects', 
                               delete_obj_selecta, delete_obj_btn)
 
 # ----------------------------------------------------- #
@@ -686,7 +699,7 @@ save_obj_btn = pn.widgets.Button(name = 'Save Object',
 save_obj_btn.on_click(run_save_fiberobj) #Button action
 
 #Box
-save_obj_box = pn.WidgetBox('## Save Fiber Objects for later',
+save_obj_box = pn.WidgetBox('# Save Fiber Objects for later',
                             save_obj_selecta, save_obj_btn)
 
 # ----------------------------------------------------- #
@@ -803,7 +816,7 @@ behav_options = pn.Column(upload_beh_info, behav_selecta,
                           behav_input, upload_beh_btn)
 lick_options = pn.Column(convert_info, lick_input, upload_lick_btn)
 beh_tabs = pn.Tabs(('Behavior Import', behav_options),
-                   ('Lick to Boris', lick_options))
+                   ('Lick 2 Boris', lick_options))
 
 upload_beh_widget = pn.WidgetBox(beh_tabs, height = 270)
 upload_beh_card = pn.Card(upload_beh_widget, title = 'Import Behavior', 
@@ -857,8 +870,6 @@ plot_beh_card = pn.Card(plot_beh_widget, clear_beh,
 #Plot Z-Score
 
 #Input variables
-save_csv = pn.widgets.Checkbox(name='Save CSV')
-
 zscore_selecta = pn.widgets.MultiSelect(name = 'Fiber Objects', value = [],
                                         options = [], )
 zbehs_selecta = pn.widgets.MultiSelect(name = 'Behavior', value = [],
@@ -931,7 +942,7 @@ tabs = pn.Tabs(('Z-Score', zscore_options),
                ('Baseline Options', baseline_options), 
                ('Reduce Displayed Traces', trace_options))
 zscore_widget = pn.WidgetBox(zscore_info, tabs)
-zscore_card = pn.Card(zscore_widget, clear_zscore, save_csv,
+zscore_card = pn.Card(zscore_widget, clear_zscore,
                       title = 'Zscore Plot', background = 'WhiteSmoke',
                       width = 600, collapsed = True)
 
@@ -970,9 +981,11 @@ clear_pears = pn.widgets.Button(name = 'Clear Plots \u274c',
 clear_pears.on_click(clear_plots)
 
 pears_info = pn.pane.Markdown("""
-                                    - Takes in user chosen objects and channels then returns the Pearson's correlation coefficient and   
-                                    plots the signals. <br>
-                                """, width = 200)
+                                    - Takes in user chosen objects and channels 
+                                    then returns the Pearson's correlation coefficient 
+                                    and plots the signals.
+                                """, 
+                                width = 200)
 
 #Box
 pearson_row1  = pn.Row(pearsons_selecta1, pearsons_selecta2)
@@ -1018,7 +1031,8 @@ clear_beh_corr = pn.widgets.Button(name = 'Clear Plots \u274c',
 clear_beh_corr.on_click(clear_plots)
 
 beh_corr_info = pn.pane.Markdown("""
-                                    - Takes in user chosen objects, channels and behaviors to calculate the behavior specific Pearson’s 
+                                    - Takes in user chosen objects, channels 
+                                    and behaviors to calculate the behavior specific Pearson’s 
                                     correlation and plot the signals. <br>
                                 """, width = 200)
 
