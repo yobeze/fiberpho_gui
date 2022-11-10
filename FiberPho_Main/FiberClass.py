@@ -248,24 +248,39 @@ class fiberObj:
             red_col = np.where(test_red)[0][self.fiber_num - 1]
         
         led_states = time_slice['LedState'][2:8].unique()
-        npm_dict = {2: 'Green', 1: 'Isosbestic', 4: 'Red'}
+        npm_dict = {'Green' : {2, 10, 18, 34, 66, 130, 258, 514},
+                    'Isosbestic':{1, 9, 17, 33, 65, 129, 257, 513},
+                    'Red': {4, 12, 20, 36, 68, 132, 260, 516}}
         
         for color in led_states:
-            if color == 1 or color == 2 or color == 4:
-                data_dict['time_' + npm_dict[color]] =  time_slice[
-                    time_slice['LedState'] == color]['Timestamp'].values.tolist()
+            if color in npm_dict['Green']:
+                data_dict['time_Green'] =  time_slice[
+                    time_slice['LedState'] == color][
+                        'Timestamp'].values.tolist()
+            elif color in npm_dict['Red']:
+                data_dict['time_Red'] =  time_slice[
+                    time_slice['LedState'] == color][
+                    'Timestamp'].values.tolist()
+            elif color in npm_dict['Isosbestic']:
+                data_dict['time_Isosbestic'] =  time_slice[
+                    time_slice['LedState'] == color][
+                    'Timestamp'].values.tolist()
                 
             if green_ROI: 
-                if color == 1 or color == 2:
-                    data_dict['Raw_' + npm_dict[color]] = time_slice[
+                if color in npm_dict['Green'] :
+                    data_dict['Raw_Green'] = time_slice[
                         time_slice['LedState'] == color].iloc[:, green_col].values.tolist()
-                    self.channels.add('Raw_' + npm_dict[color])
+                    self.channels.add('Raw_Green')
+                elif color in npm_dict['Isosbestic']:
+                    data_dict['Raw_Isosbestic'] = time_slice[
+                        time_slice['LedState'] == color].iloc[:, green_col].values.tolist()
+                    self.channels.add('Raw_Isosbestic')
             
             if red_ROI: 
-                if color == 4:
-                    data_dict['Raw_' + npm_dict[color]] = time_slice[
+                if color in npm_dict['Red']:
+                    data_dict['Raw_Red'] = time_slice[
                         time_slice['LedState'] == color].iloc[:, red_col].values.tolist() 
-                    self.channels.add('Raw_' + npm_dict[color])
+                    self.channels.add('Raw_Red')
             
         shortest_list = min([len(data_dict[ls]) for ls in data_dict])
         
@@ -561,7 +576,7 @@ class fiberObj:
         self.fpho_data_df.loc[:, signal + ' normed to exp']=normed_sig
                 
         
-        if reference:
+        if reference is not None:
             ref = self.fpho_data_df[reference]
             popt, pcov = curve_fit(self.fit_exp, time, ref, p0=(1.0, 0, 1.0, 0, 0),
                                    bounds = (0,np.inf))
@@ -618,7 +633,7 @@ class fiberObj:
             
         self.fpho_data_df.loc[:,signal[4:] + '_Normalized'] = normed_to_ref
         self.channels.add(signal[4:] + '_Normalized')
-        if reference:
+        if reference is not None:
             fig = make_subplots(rows = 3, cols = 2, x_title = 'Time(s)',
                         subplot_titles=("Biexponential Fitted to Signal",
                                         "Signal Normalized to Biexponential",
@@ -794,7 +809,7 @@ class fiberObj:
         header_line = file[:header_idx].count('\n')        
             
         BORIS_data = pd.read_csv(io.StringIO(file), header=header_line)  # starts at data
-
+        BORIS_data = BORIS_data.sort_values('Time')
         unique_behaviors = BORIS_data['Behavior'].unique()
         for beh in unique_behaviors:
             self.behaviors.add(beh)
@@ -1278,7 +1293,18 @@ class fiberObj:
         shorter_len = min(len(sig1), len(sig2)) 
         #calculates the pearsons R  
         [r, p] = ss.pearsonr(sig1, sig2)
-
+        res = ss.linregress(sig1, sig2)
+                #plots sig2
+        fig.add_trace(
+            go.Scattergl(
+            x = sig1,
+            y = res.intercept + res.slope*sig1,
+            mode = "lines",
+            line = dict(color = "darkgray", width = 5),
+            name = "best fit",
+            showlegend = False),
+            row = 1, col = 2
+            )
         results = {'Object Name': self.obj_name, 'Channel' : channel1, 'Obj2': obj2.obj_name, 'Obj2 Channel': channel2, 'start_time' : start_time,
                    'end_time' : end_time, 'R Score' : str(r), 'p score': str(p)}
         self.correlation_results = self.correlation_results.append(results, ignore_index = True)
@@ -1289,7 +1315,7 @@ class fiberObj:
         return fig
         
 
-    def behavior_specific_pearsons(self, obj2, channel, beh):
+    def behavior_specific_pearsons(self, obj2, channel1, channel2, beh):
         """
         Takes in user chosen objects, channels and behaviors to calculate 
         the behavior specific Pearson’s correlation and plot the signals. 
@@ -1316,8 +1342,8 @@ class fiberObj:
         behaviorSlice2 = obj2.fpho_data_df[self.fpho_data_df[beh] != ' ']
 
         time = behaviorSlice1['time_Green']
-        sig1 = behaviorSlice1[channel]
-        sig2 = behaviorSlice2[channel]
+        sig1 = behaviorSlice1[channel1]
+        sig2 = behaviorSlice2[channel2]
         fig = make_subplots(rows = 1, cols = 2)
         fig.add_trace(
             go.Scattergl(
@@ -1344,7 +1370,6 @@ class fiberObj:
             y = sig2,
             mode = "lines",
             line = go.scatter.Line(color = 'rgba(100,0,200, .6)'),
-            name = channel[1],
             showlegend = False),
             row = 1, col = 1
             )
