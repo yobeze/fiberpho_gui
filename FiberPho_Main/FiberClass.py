@@ -1360,7 +1360,7 @@ class fiberObj:
             y = sig1,
             mode = "lines",
             line = go.scatter.Line(color = 'rgb(255,100,150)'),
-            name = channel,
+            name = channel1,
             showlegend = False),
             row = 1, col = 1
             )
