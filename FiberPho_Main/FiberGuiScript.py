@@ -43,13 +43,37 @@ fiber_data = pd.DataFrame(columns = ['Fiber #',
                                      'Exp. Start Time', 
                                      'Filename',
                                      'Behavior File'])
+# Dynamically create dataframe in order to delete
+# from memory later.
+# This (hopefully) avoids keeping the prev. csv
+# uploaded in memory and does not get reuploaded
+df = pd.DataFrame()
 
-#Read fpho data
-def run_init_fiberobj(event = None):
-    # .value param to extract variables properly
+# Read fpho data
+def run_read_csv(event):
     value = fpho_input.value
+    global df
+    
+    try:
+        ## Look into PyArrow backend for faster CSV reading times ##
+        string_io = io.StringIO(value.decode("utf8"))
+        df = pd.read_csv(string_io) #Read into dataframe
+        if not df.empty:
+            upload_button.disabled = False # Enables create obj button
+    except AttributeError:
+        print("Make sure you choose a file")
+        return
+    except PermissionError:
+        print("You do not have permission to access this file")
+        return
+    
+# Create fpho object
+def run_init_fiberobj(event):
+    # value = fpho_input.value
     file_name = fpho_input.filename
     obj_name = input_1.value
+    global df
+    
     if npm_format.value:
         fiber_num = input_2.value
     else:
@@ -70,22 +94,28 @@ def run_init_fiberobj(event = None):
         print('There is already an object with this name')
         return
         
-    try:
-        string_io = io.StringIO(value.decode("utf8"))
-        df = pd.read_csv(string_io) #Read into dataframe
-    except AttributeError:
-        print("Make sure you choose a file")
-        return
-    except PermissionError:
-        print("You do not have permission to access this file")
-        return
+    # try:
+    #     ## Look into PyArrow backend for faster CSV reading times ##
+    #     string_io = io.StringIO(value.decode("utf8"))
+    #     df = pd.read_csv(string_io) #Read into dataframe
+    #     if df:
+    #         upload_button.disabled = False
+    # except AttributeError:
+    #     print("Make sure you choose a file")
+    #     return
+    # except PermissionError:
+    #     print("You do not have permission to access this file")
+    #     return
           
     try:
         #Add to dict if object name does not already exist
         new_obj = fc.fiberObj(df, input_params[0], input_params[1],
                               input_params[2], input_params[3],
                               input_params[4], input_params[5], 
-                              input_params[6], input_params[7])    
+                              input_params[6], input_params[7])
+        # Extra precaution to delete dataframe from memory
+        # once it has been uploaded for future obj uploads
+        del df
     except KeyError:
         logger.error(traceback.format_exc())
         pn.state.notifications.error(
@@ -710,15 +740,24 @@ input_col = pn.Column(input_3, input_4,
 upload_button = pn.widgets.Button(name = 'Create Object',
                                   button_type = 'primary',
                                   width = 500, sizing_mode = 'stretch_width',
-                                  align = 'end')
+                                  align = 'end', disabled = True)
+
+read_csv_btn = pn.widgets.Button(name = 'Read CSV',
+                                 button_type = 'primary',
+                                 width = 500, sizing_mode = 'stretch_width',
+                                 align = 'end')
+
+read_csv_btn.on_click(run_read_csv) # Button action
+
 upload_button.on_click(run_init_fiberobj) #Button action
 
 #Box
 init_obj_box = pn.WidgetBox('# Create new fiber object', fpho_input,
-                            input_1, fiber_num_row,
+                            read_csv_btn, input_1, fiber_num_row,
                             '**Experiment Info**', input_col,
                             '**Crop your data**', input_6, 
                             input_7, upload_button)
+
 
 # ----------------------------------------------------- # 
 # ----------------------------------------------------- # 
