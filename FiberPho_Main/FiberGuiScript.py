@@ -43,14 +43,41 @@ fiber_data = pd.DataFrame(columns = ['Fiber #',
                                      'Exp. Start Time', 
                                      'Filename',
                                      'Behavior File'])
+# Dynamically create dataframe in order to delete
+# from memory later.
+# This (hopefully) avoids keeping the prev. csv
+# uploaded in memory and does not get reuploaded
+df = pd.DataFrame()
 
-#Read fpho data
-def run_init_fiberobj(event = None):
-    # .value param to extract variables properly
+# Read fpho data
+def run_read_csv(event):
     value = fpho_input.value
+    global df
+    
+    try:
+        ## Look into PyArrow backend for faster CSV reading times ##
+        string_io = io.StringIO(value.decode("utf8"))
+        df = pd.read_csv(string_io) #Read into dataframe
+        if not df.empty:
+            upload_button.disabled = False # Enables create obj button
+    except AttributeError:
+        print("Make sure you choose a file")
+        return
+    except PermissionError:
+        print("You do not have permission to access this file")
+        return
+    
+# Create fpho object
+def run_init_fiberobj(event):
+    # value = fpho_input.value
     file_name = fpho_input.filename
     obj_name = input_1.value
-    fiber_num = input_2.value
+    global df
+    
+    if npm_format.value:
+        fiber_num = input_2.value
+    else:
+        fiber_num = None
     animal_num = input_3.value_input
     exp_date = input_4.value_input
     exp_time = input_5.value_input
@@ -67,22 +94,28 @@ def run_init_fiberobj(event = None):
         print('There is already an object with this name')
         return
         
-    try:
-        string_io = io.StringIO(value.decode("utf8"))
-        df = pd.read_csv(string_io) #Read into dataframe
-    except AttributeError:
-        print("Make sure you choose a file")
-        return
-    except PermissionError:
-        print("You do not have permission to access this file")
-        return
+    # try:
+    #     ## Look into PyArrow backend for faster CSV reading times ##
+    #     string_io = io.StringIO(value.decode("utf8"))
+    #     df = pd.read_csv(string_io) #Read into dataframe
+    #     if df:
+    #         upload_button.disabled = False
+    # except AttributeError:
+    #     print("Make sure you choose a file")
+    #     return
+    # except PermissionError:
+    #     print("You do not have permission to access this file")
+    #     return
           
     try:
         #Add to dict if object name does not already exist
         new_obj = fc.fiberObj(df, input_params[0], input_params[1],
                               input_params[2], input_params[3],
                               input_params[4], input_params[5], 
-                              input_params[6], input_params[7])    
+                              input_params[6], input_params[7])
+        # Extra precaution to delete dataframe from memory
+        # once it has been uploaded for future obj uploads
+        del df
     except KeyError:
         logger.error(traceback.format_exc())
         pn.state.notifications.error(
@@ -115,6 +148,9 @@ def run_init_fiberobj(event = None):
     existing_objs = fiber_objs
     #Updates selectors with new objects
     update_obj_selectas(existing_objs)
+    last_filename = fpho_input.filename
+    last_file = fpho_input.value
+    
     return
 
 
@@ -128,10 +164,14 @@ def run_upload_fiberobj(event = None):
                 try:
                     temp = pickle.load(file)
                 except EOFError:
-                    break
-                    
+                    pn.state.notifications.error(
+                    'Error: Please check logger for more info',
+                    duration = 4000)
+                print("Error uploading " + filename +
+                      ". Ensure this is a valid .pkl file")
+                continue                    
+
             fiber_objs[temp.obj_name] = temp
-        
             fiber_data.loc[temp.obj_name] = ([temp.fiber_num,
                                               temp.animal_num,
                                               temp.exp_date,
@@ -151,14 +191,56 @@ def run_upload_fiberobj(event = None):
         #Object uploaded notification
         pn.state.notifications.success('Uploaded ' + temp.obj_name
                                        + ' object!', duration = 4000)
+        return
     except Exception as e:
         logger.error(traceback.format_exc())
+        
+# Combine two objects into one
+def run_combine_objs(event = None):
+    obj1 = fiber_objs[combine_obj_selecta1.value]
+    obj2 = fiber_objs[combine_obj_selecta2.value]
+    obj_name = combine_obj_name.value 
+    combine_type = combine_type_selecta.value
+    time_adj = combine_time.value
+    new_obj = copy.deepcopy(obj1)
+    
+    if obj_name in fiber_objs:
         pn.state.notifications.error(
             'Error: Please check logger for more info', duration = 4000)
-        print("Error uploading file. Ensure this is a valid .pkl file")
+        print('There is already an object with this name')
+        return
+    
+    try:
+        #Add to dict if object name does not already exist
+        new_obj.combine_objs(obj2, obj_name,
+                             combine_type, time_adj)
+                                 
+    except KeyError:
+        print('key error')
+        return
+    # except IndexError:
+    #     logger.error(traceback.format_exc())
+    #     return
+    # except Exception as e: 
+    #     return
+            #Adds to dict
+    fiber_objs[new_obj.obj_name] = new_obj
+    pn.state.notifications.success('Created ' + new_obj.obj_name +
+                                   ' object!', duration = 4000)
+    #Adds to relevant info to dataframe
+    fiber_data.loc[new_obj.obj_name] = ([new_obj.fiber_num, 
+                                        new_obj.animal_num,
+                                        new_obj.exp_date, 
+                                        new_obj.exp_start_time,
+                                        new_obj.file_name,
+                                        new_obj.beh_filename])
+    info_table.value = fiber_data
+    existing_objs = fiber_objs
+    #Updates selectors with new objects
+    update_obj_selectas(existing_objs)
+    return
         
-        
-# Saves selected object to pickle file
+# Deletes selected object
 def run_delete_fiberobj(event = None):
     for obj in delete_obj_selecta.value:
         try:
@@ -210,6 +292,8 @@ def run_plot_raw_trace(event):
         try:
             plot_pane.object = temp.raw_signal_trace() 
             plot_raw_card.append(plot_pane) #Add figure to template
+            if save_pdf_rawplot.value:
+                fig.write_image(temp.obj_name + "_raw_data.pdf")
         #playsound(correct_chime)
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -231,9 +315,13 @@ def run_normalize_a_signal(event = None):
                                    sizing_mode = "stretch_width") 
         #Sets figure to plot variable
         try:
-            plot_pane.object = temp.normalize_a_signal(pick_signal.value,
-                                                   pick_reference.value) 
+            fig = temp.normalize_a_signal(pick_signal.value,
+                                                   pick_reference.value)
+            plot_pane.object = fig
             norm_sig_card.append(plot_pane) #Add figure to template
+            if save_pdf_norm.value:
+                fig.write_image(objs + '_' + pick_signal.value + "_normalized.pdf")
+
         except Exception as e:
             logger.error(traceback.format_exc())
             pn.state.notifications.error(
@@ -284,7 +372,8 @@ def run_plot_behavior(event = None):
             plot_pane.object = temp.plot_behavior(behavior_selecta.value,
                                               channel_selecta.value) 
             plot_beh_card.append(plot_pane) #Add figure to template
-            #playsound(correct_chime)
+            if save_pdf_beh.value:
+                fig.write_image(objs + "_behavior_plot.pdf")
         except Exception as e:
             logger.error(traceback.format_exc())
             pn.state.notifications.error(
@@ -316,9 +405,13 @@ def run_plot_zscore(event = None):
                                                         baseline_option,
                                                         first_trace.value,
                                                         last_trace.value,
-                                                        show_every.value) 
+                                                        show_every.value,
+                                                        save_csv.value,
+                                                        percent_bool.value) 
                     zscore_card.append(plot_pane) #Add figure to template
-                    #playsound(correct_chime)
+
+                    if save_pdf_PSTH.value:
+                        fig.write_image(objs + "_PSTH.pdf")
                 except Exception as e:
                     logger.error(traceback.format_exc())
                     pn.state.notifications.error(
@@ -345,6 +438,8 @@ def run_pearsons_correlation(event = None):
                                                      channel1, channel2,
                                                      start, end)
         pearsons_card.append(plot_pane) #Add figure to template
+        if save_pdf_time_corr.value:
+            fig.write_image(name1 + '_' + name2 + "_correlation.pdf")
     except ValueError:
         return
     except Exception as e:
@@ -361,14 +456,19 @@ def run_beh_specific_pearsons(event = None):
             name2 = beh_corr_selecta2.value
             obj1 = fiber_objs[name1]
             obj2 = fiber_objs[name2]
+            channel1 = beh_corr_channel_selecta1.value
+            channel2 = beh_corr_channel_selecta2.value
             #Creates pane for plot
             plot_pane = pn.pane.Plotly(height = 300,
                                        sizing_mode = "stretch_width")
             try:
                 plot_pane.object = obj1.behavior_specific_pearsons(obj2,
-                                                                   channel, 
+                                                                   channel1,
+                                                                   channel2, 
                                                                    behavior)
                 beh_corr_card.append(plot_pane) #Add figure to template 
+                if save_pdf_beh_corr.value:
+                    fig.write_image(name1 + '_' + name2 + '_' + behavior + "_correlation.pdf")
             except Exception as e:
                 logger.error(traceback.format_exc())
                 pn.state.notifications.error(
@@ -388,7 +488,7 @@ def update_selecta_options(event = None):
             temp = fiber_objs[objs]
             available_channels = temp.channels & available_channels
         pick_signal.options = list(available_channels)
-        pick_reference.options = list(available_channels)
+        pick_reference.options = list(available_channels) + [None]
     
     # Plot Behav card
     selected_behav = plot_beh_selecta.value
@@ -431,11 +531,13 @@ def update_selecta_options(event = None):
     name2 = beh_corr_selecta2.value
     obj1 = fiber_objs[name1]
     obj2 = fiber_objs[name2]
-    available_channels = obj1.channels & obj2.channels
+    available_channels1 = obj1.channels
+    available_channels2 = obj2.channels
     available_behaviors = obj1.behaviors & obj2.behaviors
-    beh_corr_channel_selecta.options = list(available_channels)
+    beh_corr_channel_selecta1.options = list(available_channels1)
+    beh_corr_channel_selecta2.options = list(available_channels2)
     beh_corr_behavior_selecta.options = list(available_behaviors)
-    
+
     return
     
 # Clear plots by card function
@@ -475,6 +577,8 @@ def clear_plots(event):
             if isinstance(beh_corr_card.objects[i], pn.pane.plotly.Plotly):
                 beh_corr_card.remove(beh_corr_card.objects[i])
                 return
+    
+    return
             
 # Convert lickometer data to boris csv
 def run_convert_lick(event):
@@ -512,8 +616,9 @@ def run_convert_lick(event):
                 'Error: Please check logger for more info', duration = 4000)
     else:
         print('Error reading file')
-        
+    return        
 
+# Convert lickometer data to boris csv
 def run_download_results(event):
     for types in result_type_selecta.value:
         results = pd.DataFrame()
@@ -552,10 +657,10 @@ def run_download_results(event):
         except Exception as e:
             logger.error(traceback.format_exc())
             pn.state.notifications.error(
-                'Error: Please check logger for more info', duration = 4000
-            )
+                'Error: Please check logger for more info', duration = 4000)
             continue
     return
+
 def update_obj_selectas(existing_objs):
     #Updates selectors with new objects
     obj_selecta.options = [*existing_objs]
@@ -568,6 +673,8 @@ def update_obj_selectas(existing_objs):
     beh_corr_selecta1.options = [*existing_objs]
     beh_corr_selecta2.options = [*existing_objs]
     save_obj_selecta.options = [*existing_objs]
+    combine_obj_selecta1.options = [*existing_objs]
+    combine_obj_selecta2.options = [*existing_objs]
     delete_obj_selecta.options = [*existing_objs]
     results_selecta.options = [*existing_objs]
     return
@@ -610,37 +717,47 @@ log_card = pn.Card(pn.Row(logger_info, clear_logs), terminal, title = 'Logs',
 # Init fiberobj Widget
 
 #Input variables
-input_1 = pn.widgets.TextInput(name = 'Object Name', width = 80,
-                               value = 'Obj1')
-input_2 = pn.widgets.IntInput(name = 'Fiber Number', start = 1,
-                              end = 16, width = 80, value = 'Int')
-input_3 = pn.widgets.TextInput(name = 'Animal Number', width = 80,
-                               placeholder = 'String')
-input_4 = pn.widgets.TextInput(name = 'Exp Date', width = 80,
-                               placeholder = 'Date')
-input_5 = pn.widgets.TextInput(name = 'Exp Time', width = 80,
-                               placeholder = 'Time')
-input_6 = pn.widgets.IntInput(name = 'Exclude time from the beginning of recording',
-                               width = 90, placeholder = 'Seconds',
-                              value = 0) #looking for better name
+fpho_input = pn.widgets.FileInput(name = 'Upload FiberPho Data',
+                                  accept = '.csv') #File input parameter
+npm_format = pn.widgets.Checkbox(name='Npm format', value = True, align = 'center')
+input_1 = pn.widgets.TextInput(name = 'Object Name', width = 90, value = 'Obj1')
+input_2 = pn.widgets.IntInput(name = 'Fiber Number', start = 1, end = 16, 
+                              width = 80, placeholder = 'Int')
+input_3 = pn.widgets.TextInput(name = 'Animal Number',  
+                              width = 80, placeholder = 'String')
+input_4 = pn.widgets.TextInput(name = 'Exp Date', width = 90, placeholder = 'Date')
+input_5 = pn.widgets.TextInput(name = 'Exp Time', width = 90, placeholder = 'Time')
+input_6 = pn.widgets.IntInput(name = 'Exclude time from beginning of recording',
+                               width = 90, placeholder = 'Seconds', value = 0) #looking for better name
 input_7 = pn.widgets.IntInput(name = 'Stop time from the beginning',
                                width = 90, placeholder = 'Seconds',
                               value = -1) #looking for better name
-input_col = pn.Column(input_1, input_2, input_3, input_4,
-                      input_5, input_6, input_7)
-fpho_input = pn.widgets.FileInput(name = 'Upload FiberPho Data',
-                                  accept = '.csv') #File input parameter
+fiber_num_row = pn.Row(input_2, npm_format)
 
+input_col = pn.Column(input_3, input_4,
+                      input_5, input_6, input_7)
 #Buttons
 upload_button = pn.widgets.Button(name = 'Create Object',
                                   button_type = 'primary',
                                   width = 500, sizing_mode = 'stretch_width',
-                                  align = 'end')
+                                  align = 'end', disabled = True)
+
+read_csv_btn = pn.widgets.Button(name = 'Read CSV',
+                                 button_type = 'primary',
+                                 width = 500, sizing_mode = 'stretch_width',
+                                 align = 'end')
+
+read_csv_btn.on_click(run_read_csv) # Button action
+
 upload_button.on_click(run_init_fiberobj) #Button action
 
 #Box
-init_obj_box = pn.WidgetBox('# Input Params', fpho_input,
-                            input_col, upload_button)
+init_obj_box = pn.WidgetBox('# Create new fiber object', fpho_input,
+                            read_csv_btn, input_1, fiber_num_row,
+                            '**Experiment Info**', input_col,
+                            '**Crop your data**', input_6, 
+                            input_7, upload_button)
+
 
 # ----------------------------------------------------- # 
 # ----------------------------------------------------- # 
@@ -663,9 +780,44 @@ load_obj_box = pn.WidgetBox('# Reload saved Fiber Objects',
                             upload_pkl_selecta, upload_pkl_btn)
 
 # ----------------------------------------------------- #
+# ----------------------------------------------------- # 
+#Combine fiberobjs Widget
+
+#Input variables
+#File input parameter
+combine_obj_name = pn.widgets.TextInput(name = 'New Object Name', value = '',
+                                       width = 80)
+combine_obj_selecta1 = pn.widgets.Select(name = 'First Object', value = [],
+                                         options = [])
+combine_obj_selecta2 = pn.widgets.Select(name = 'First Object', value = [],
+                                         options = [])
+combine_type_selecta = pn.widgets.Select(name = 'Stitch type',
+                                         value = 'Obj2 starts immediately after Obj1',
+                                         options = ['Use Obj2 current start time',
+                                                  'Use x secs for Obj2s start time',
+                                                  'Obj2 starts immediately after Obj1',
+                                                  'Obj2 starts x secs after Obj1 ends'])
+
+combine_time = pn.widgets.TextInput(name = 'x secs', value = '0',
+                                       width = 80)
+
+
+#Buttons
+combine_obj_btn = pn.widgets.Button(name = 'Combine Objects',
+                                   button_type = 'primary',
+                                   width = 500, sizing_mode = 'stretch_width',
+                                   align = 'end')
+combine_obj_btn.on_click(run_combine_objs) #Button action
+
+#Box
+combine_obj_box = pn.WidgetBox('# Combine two existing fiber objs',
+                               combine_obj_name, combine_obj_selecta1,
+                               combine_obj_selecta2, combine_type_selecta,
+                               combine_time, combine_obj_btn)
 
 # ----------------------------------------------------- # 
-#Delete fiberobj widget
+# ----------------------------------------------------- # 
+#Delete fiberobj Widget
 
 #Input variables
 delete_obj_selecta = pn.widgets.MultiSelect(name = 'Fiber Objects',
@@ -727,10 +879,15 @@ raw_info = pn.pane.Markdown("""
                                 - Plots the raw signal outputs of fiber objects.
                             """, width = 200)
 
+save_pdf_rawplot = pn.widgets.Checkbox(name = 'Save plot as pdf', value = False)
+
 #Box
 plot_options = pn.Column(obj_selecta, plot_raw_btn)
 plot_raw_widget = pn.WidgetBox(raw_info, plot_options)
-plot_raw_card = pn.Card(plot_raw_widget, clear_raw,
+raw_plot_ops = pn.Row(save_pdf_rawplot, clear_raw,
+                  sizing_mode = 'stretch_width',
+                  margin = (0, 100, 0, 0))
+plot_raw_card = pn.Card(plot_raw_widget, raw_plot_ops,
                         title = 'Plot Raw Signal',
                         background = 'WhiteSmoke',
                         width = 600, collapsed = True)
@@ -768,11 +925,15 @@ norm_info = pn.pane.Markdown("""
                                     Stores all fitted traces in the dataframe and 
                                     plots them for examination.""",
                              width = 200)
+save_pdf_norm = pn.widgets.Checkbox(name = "Save plot as pdf", value = False)
 #Box
 norm_options = pn.Column(norm_selecta, update_norm_options_btn, pick_signal,
                          pick_reference, norm_sig_btn)
-norm_sig_widget = pn.WidgetBox(norm_info, norm_options)
-norm_sig_card = pn.Card(norm_sig_widget, clear_norm,
+norm_sig_widget = pn.WidgetBox('# Normalize Signal', norm_info, norm_options)
+norm_plot_ops = pn.Row(save_pdf_norm, clear_norm,
+                        sizing_mode = 'stretch_width',
+                        margin = (0, 100, 0, 0))
+norm_sig_card = pn.Card(norm_sig_widget, norm_plot_ops,
                         title = 'Normalize to a reference',
                         background = 'WhiteSmoke',
                         width = 600, collapsed = True)
@@ -857,11 +1018,15 @@ clear_beh.on_click(clear_plots)
 beh_info = pn.pane.Markdown("""
                                 - Creates and displays the different channels from behavior data. <br>
                             """, width = 200)
+save_pdf_beh = pn.widgets.Checkbox(name = 'Save plot as pdf', value = False)
 #Box
 plot_beh_options = pn.Column(plot_beh_selecta, update_plot_options_btn,
                              channel_selecta, behavior_selecta, plot_beh_btn)
 plot_beh_widget = pn.WidgetBox(beh_info, plot_beh_options)
-plot_beh_card = pn.Card(plot_beh_widget, clear_beh,
+beh_plot_ops = pn.Row(save_pdf_beh, clear_beh, 
+                      sizing_mode = 'stretch_width',
+                      margin = (0, 100, 0, 0))
+plot_beh_card = pn.Card(plot_beh_widget, beh_plot_ops,
                         title = 'Plot Behavior', background = 'WhiteSmoke',
                         width = 600, collapsed = True)
 
@@ -870,6 +1035,8 @@ plot_beh_card = pn.Card(plot_beh_widget, clear_beh,
 #Plot Z-Score
 
 #Input variables
+save_csv = pn.widgets.Checkbox(name = 'Save CSV')
+percent_bool = pn.widgets.Checkbox(name = "Use % of baseline instead of Z-score")
 zscore_selecta = pn.widgets.MultiSelect(name = 'Fiber Objects', value = [],
                                         options = [], )
 zbehs_selecta = pn.widgets.MultiSelect(name = 'Behavior', value = [],
@@ -909,6 +1076,8 @@ zscore_info = pn.pane.Markdown("""
                                     z-score and SEM.
                                 """, width = 200)
 
+save_pdf_PSTH = pn.widgets.Checkbox(name = "Save plot as pdf", value = False)
+
 #Buttons
 zscore_btn = pn.widgets.Button(name = 'Zscore of Behavior', 
                                button_type = 'primary', width = 200,
@@ -921,9 +1090,10 @@ options_btn = pn.widgets.Button(name = 'Update Options',
                                 align = 'start')
 options_btn.on_click(update_selecta_options) #Button action
 
-baseline_selecta = pn.widgets.CheckBoxGroup(name = 'Baseline Options',
-                                            value = [],
-                                            options = ['Start of Sample',
+baseline_selecta = pn.widgets.RadioBoxGroup(name = 'Baseline Options',
+                                            value = 'Each event',
+                                            options = ['Each event',
+                                                        'Start of Sample',
                                                        'Before Events',
                                                        'End of Sample'], 
                                             inline = True)
@@ -934,15 +1104,19 @@ clear_zscore.on_click(clear_plots)
 
 #Box
 zscore_options = pn.Column(zscore_selecta, options_btn, zchannel_selecta, 
-                           zbehs_selecta, time_before, time_after, zscore_btn)
+                           zbehs_selecta, time_before, time_after)
 baseline_options = pn.Column(z_score_note, baseline_start,
                              baseline_end, baseline_selecta)
 trace_options = pn.Column(first_trace, last_trace, show_every)
+check_boxes = pn.Row(save_csv, percent_bool)
 tabs = pn.Tabs(('Z-Score', zscore_options),
                ('Baseline Options', baseline_options), 
                ('Reduce Displayed Traces', trace_options))
-zscore_widget = pn.WidgetBox(zscore_info, tabs)
-zscore_card = pn.Card(zscore_widget, clear_zscore,
+zscore_widget = pn.WidgetBox('# Zscore Plot', zscore_info, tabs, zscore_btn, check_boxes)
+zscore_plot_ops = pn.Row(save_pdf_PSTH, clear_zscore, 
+                         sizing_mode = 'stretch_width', 
+                         margin = (0, 100, 0, 0))
+zscore_card = pn.Card(zscore_widget, zscore_plot_ops,
                       title = 'Zscore Plot', background = 'WhiteSmoke',
                       width = 600, collapsed = True)
 
@@ -963,6 +1137,8 @@ pears_start_time = pn.widgets.IntInput(name = 'Start Time', width = 50,
                                        placeholder = 'Seconds', value = 0)
 pears_end_time = pn.widgets.IntInput(name = 'End Time', width = 50,
                                      placeholder = 'Seconds', value = -1)
+
+save_pdf_time_corr = pn.widgets.Checkbox(name = 'Save plot as pdf', value = False)
 
 #Buttons
 pearsons_btn = pn.widgets.Button(name = 'Calculate Pearsons Correlation',
@@ -994,7 +1170,10 @@ pearson_row3  = pn.Row(pears_start_time, pears_end_time)
 pearson_widget = pn.WidgetBox('# Pearons Correlation Plot', pears_info,
                               pearson_row1, pearson_options_btn, pearson_row2,
                               pearson_row3, pearsons_btn)
-pearsons_card = pn.Card(pearson_widget, clear_pears,
+pearsons_plot_ops = pn.Row(save_pdf_time_corr, clear_pears,
+                            sizing_mode = 'stretch_width',
+                            margin = (0, 100, 0, 0))
+pearsons_card = pn.Card(pearson_widget, pearsons_plot_ops,
                         title = 'Pearsons Correlation Coefficient',
                         background = 'WhiteSmoke', width = 600,
                         collapsed = True)
@@ -1009,8 +1188,10 @@ beh_corr_selecta1 = pn.widgets.Select(name = 'Object 1', value = [],
                                       options = [], )
 beh_corr_selecta2 = pn.widgets.Select(name = 'Object 2', value = [],
                                       options = [], )
-beh_corr_channel_selecta = pn.widgets.MultiSelect(name = 'Signal',
-                                                  value = [], options = [], )
+beh_corr_channel_selecta1 = pn.widgets.Select(name = 'Signal', value = [],
+                                                  options = [])
+beh_corr_channel_selecta2 = pn.widgets.Select(name = 'Signal', value = [],
+                                                  options = [])
 beh_corr_behavior_selecta = pn.widgets.MultiSelect(name = 'Behavior',
                                                    value = [], options = [], )
 
@@ -1036,12 +1217,20 @@ beh_corr_info = pn.pane.Markdown("""
                                     correlation and plot the signals. <br>
                                 """, width = 200)
 
+save_pdf_beh_corr = pn.widgets.Checkbox(name = 'Save plot as pdf', value = False)
+
+
 #Box
-beh_corr_options = pn.Column(beh_corr_selecta1, beh_corr_selecta2,
-                             beh_corr_options_btn, beh_corr_channel_selecta,
+obj_row  = pn.Row(beh_corr_selecta1, beh_corr_selecta2)
+channel_row  = pn.Row(beh_corr_channel_selecta1, beh_corr_channel_selecta2)
+beh_corr_options = pn.Column(obj_row, beh_corr_options_btn, channel_row,
                              beh_corr_behavior_selecta, beh_corr_btn)
-beh_corr_widget = pn.WidgetBox(beh_corr_info, beh_corr_options)
-beh_corr_card = pn.Card(beh_corr_widget, clear_beh_corr,
+beh_corr_widget = pn.WidgetBox('# Behavior Specific Correlation Plot', 
+                                beh_corr_info, beh_corr_options)
+beh_corr_plot_ops = pn.Row(save_pdf_beh_corr, clear_beh_corr,
+                            sizing_mode = 'stretch_width', 
+                            margin = (0, 100, 0, 0))
+beh_corr_card = pn.Card(beh_corr_widget, beh_corr_plot_ops,
                         title = 'Behavior Specific Pearsons Correlation',
                         background = 'WhiteSmoke', width = 600,
                         collapsed = True)
@@ -1073,7 +1262,7 @@ download_results_btn.on_click(run_download_results) #Button action
 download_results_widget = pn.WidgetBox('# Download Results', output_name,
                                        results_selecta, result_type_selecta,
                                        download_results_btn)
-download_results_card = pn.Card(download_results_widget, clear_pears,
+download_results_card = pn.Card(download_results_widget,
                                 title = 'Download Results',
                                 background = 'WhiteSmoke', width = 600,
                                 collapsed = True)
@@ -1090,6 +1279,7 @@ obj_info_card = pn.Card(info_table, title = "Display Object Attributes",
                         background = 'WhiteSmoke', collapsed = False)
 
 # ----------------------------------------------------- # 
+# Template settings
 # Accent Colors
 ACCENT_COLOR_HEAD = "#D9F3F3"
 ACCENT_COLOR_BG = "#128CB6"
@@ -1107,6 +1297,7 @@ material.sidebar.append(pn.pane.Markdown(
     "** Upload your photometry data *(.csv)* ** and set your fiber object's **attributes** here"))
 material.sidebar.append(init_obj_box)
 material.sidebar.append(load_obj_box)
+material.sidebar.append(combine_obj_box)
 material.sidebar.append(save_obj_box)
 material.sidebar.append(delete_obj_box)
 
