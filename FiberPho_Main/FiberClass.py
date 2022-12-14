@@ -36,7 +36,7 @@ def lick_to_boris(beh_file, time_unit, beh_false, time_between_bouts):
     boris_df = pd.DataFrame(columns = ['Time', 'Behavior', 'Status'])
     conversion_dict = {'milliseconds':1/1000,'seconds':1,'minutes':60}
     conversion_to_sec = conversion_dict[time_unit]
-    behaviors = list(beh_file.columns())
+    behaviors = list(beh_file.columns)
     behaviors = behaviors.remove('Time')
     
     for beh in behaviors:
@@ -183,7 +183,7 @@ class fiberObj:
         self.start_time = start_time #looking for better names
         self.stop_time = stop_time #looking for better names
         self.file_name = filename
-        self.beh_filename = 'NaN'
+        self.beh_filename = 'N/A'
         self.behaviors = set()
         self.channels = set()
         self.version = 1
@@ -247,6 +247,8 @@ class fiberObj:
             red_ROI = True
             red_col = np.where(test_red)[0][self.fiber_num - 1]
         
+        time_slice.columns = time_slice.columns.str.replace('Flags', 'LedState')
+
         led_states = time_slice['LedState'][2:8].unique()
         npm_dict = {'Green' : {2, 10, 18, 34, 66, 130, 258, 514},
                     'Isosbestic':{1, 9, 17, 33, 65, 129, 257, 513},
@@ -816,33 +818,39 @@ class fiberObj:
 
         unique_behaviors = beh_data['Behavior'].unique()
         for beh in unique_behaviors:
-            self.behaviors.add(beh)
-            idx_of_beh = [i for i in range(len(beh_data['Behavior']
-                         )) if beh_data.loc[i, 'Behavior'] == beh]             
-            j = 0
-            self.fpho_data_df[beh] = ' '
-            while j < len(idx_of_beh):
-                if beh_data.loc[(idx_of_beh[j]), 'Status']=='POINT': 
-                    point_idx=self.fpho_data_df['time'].searchsorted(
-                        beh_data.loc[idx_of_beh[j],'Time'])
-                    self.fpho_data_df.loc[point_idx, beh]='S'
-                    j = j + 1
-                elif (beh_data.loc[(idx_of_beh[j]), 'Status']=='START' and 
-                      beh_data.loc[(idx_of_beh[j + 1]), 'Status']=='STOP'):
-                    startIdx = self.fpho_data_df['time'].searchsorted(
-                        beh_data.loc[idx_of_beh[j],'Time'])
-                    endIdx = self.fpho_data_df['time'].searchsorted(
-                        beh_data.loc[idx_of_beh[j + 1],'Time'])
-                    if endIdx < len(self.fpho_data_df['time']) and startIdx > 0:
-                        self.fpho_data_df.loc[startIdx, beh] = 'S'
-                        self.fpho_data_df.loc[startIdx+1 : endIdx-1, beh] = 'O'
-                        self.fpho_data_df.loc[endIdx, beh] = 'E'
-                    j = j + 2
-                else: 
-                    print("\nStart and stops for state behavior:" 
-                          + beh + " are not paired correctly.\n")
-                    sys.exit()
-        self.beh_filename = filename
+            if beh in self.fpho_data_df.columns:
+                print(beh + ' is already in ' + sel.obj_name + ' and cannot be added again.')
+            else:
+                self.behaviors.add(beh)
+                idx_of_beh = [i for i in range(len(beh_data['Behavior']
+                             )) if beh_data.loc[i, 'Behavior'] == beh]             
+                j = 0
+                self.fpho_data_df[beh] = ' '
+                while j < len(idx_of_beh):
+                    if beh_data.loc[(idx_of_beh[j]), 'Status']=='POINT': 
+                        point_idx=self.fpho_data_df['time'].searchsorted(
+                            beh_data.loc[idx_of_beh[j],'Time'])
+                        self.fpho_data_df.loc[point_idx, beh]='S'
+                        j = j + 1
+                    elif (beh_data.loc[(idx_of_beh[j]), 'Status']=='START' and 
+                          beh_data.loc[(idx_of_beh[j + 1]), 'Status']=='STOP'):
+                        startIdx = self.fpho_data_df['time'].searchsorted(
+                            beh_data.loc[idx_of_beh[j],'Time'])
+                        endIdx = self.fpho_data_df['time'].searchsorted(
+                            beh_data.loc[idx_of_beh[j + 1],'Time'])
+                        if endIdx < len(self.fpho_data_df['time']) and startIdx > 0:
+                            self.fpho_data_df.loc[startIdx, beh] = 'S'
+                            self.fpho_data_df.loc[startIdx+1 : endIdx-1, beh] = 'O'
+                            self.fpho_data_df.loc[endIdx, beh] = 'E'
+                        j = j + 2
+                    else: 
+                        print("\nStart and stops for state behavior:" 
+                              + beh + " are not paired correctly.\n")
+                        sys.exit()
+        if self.beh_filename == 'N/A':
+            self.beh_filename = filename
+        else:
+            self.beh_filename = self.beh_filename + ", " + filename
         return
 
     def plot_behavior(self, behaviors, channels):
@@ -929,8 +937,8 @@ class fiberObj:
         
     
     def plot_zscore(self, channel, beh, time_before, time_after,
-                    baseline = 0, base_option = 'Each event', show_first = -1,
-                    show_last = 0, show_every = 1,
+                    baseline = 0, base_option = 'Each event', show_first = 0,
+                    show_last = -1, show_every = 1,
                     save_csv = False, percent_bool = False):
         
         """
@@ -1098,8 +1106,13 @@ class fiberObj:
                     this_Zscore=self.zscore(trace, base_mean, base_std)
                 # Adds each trace to a dict
                 Zscore_data['event' + str(n_events)] = this_Zscore 
-
-                if show_first == -1 or n_events in np.arange(show_first, show_last, show_every):
+                
+                if show_first == 0:
+                    show_first = 1
+                if show_last == -1:
+                    show_last = len(beh_times)
+                events_to_show = np.arange(show_first, show_last, show_every)
+                if n_events in events_to_show:
                     # Times for this event trace
                     time_clip = full_time[start_idx : end_idx]
                     # Trace color (First event blue, last event red)
