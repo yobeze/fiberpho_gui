@@ -37,8 +37,8 @@ def lick_to_boris(beh_file, time_unit, beh_false, time_between_bouts):
     conversion_dict = {'milliseconds':1/1000,'seconds':1,'minutes':60}
     conversion_to_sec = conversion_dict[time_unit]
     behaviors = list(beh_file.columns)
-    behaviors = behaviors.remove('Time')
-    
+    behaviors.remove('Time')
+    print(behaviors)
     for beh in behaviors:
         trimmed = beh_file[beh_file[beh] != beh_false]
         starts = [(trimmed.iloc[0]['Time'] - beh_file.iloc[0]['Time']) * conversion_to_sec]
@@ -61,12 +61,9 @@ def lick_to_boris(beh_file, time_unit, beh_false, time_between_bouts):
         half = len(time) / 2
         status[1::2] = ['STOP'] * int(half)
         behavior = [beh] * len(time)
-        time = ['Time'] + time
-        behavior = ['Behavior'] + behavior
-        status = ['Status'] + status
-        beh_df = pd.DataFrame([time, behavior, status])
-        beh_df = beh_df.transpose()
-        boris_df.merge(beh_df)      
+        beh_df = pd.DataFrame(data = {'Time': time, 'Behavior': behavior, 'Status' : status})
+        boris_df = pd.concat([boris_df, beh_df])
+    boris_df.sort_values(by = 'Time')
     return boris_df
 
 
@@ -112,7 +109,7 @@ class fiberObj:
     
     channels : set
         Stores the signals used in photometry data
-        
+    
     fpho_data_dict : dict
         Stores photometry data into a dictionary
         
@@ -819,7 +816,7 @@ class fiberObj:
         unique_behaviors = beh_data['Behavior'].unique()
         for beh in unique_behaviors:
             if beh in self.fpho_data_df.columns:
-                print(beh + ' is already in ' + sel.obj_name + ' and cannot be added again.')
+                print(beh + ' is already in ' + self.obj_name + ' and cannot be added again.')
             else:
                 self.behaviors.add(beh)
                 idx_of_beh = [i for i in range(len(beh_data['Behavior']
@@ -839,9 +836,9 @@ class fiberObj:
                         endIdx = self.fpho_data_df['time'].searchsorted(
                             beh_data.loc[idx_of_beh[j + 1],'Time'])
                         if endIdx < len(self.fpho_data_df['time']) and startIdx > 0:
+                            self.fpho_data_df.loc[endIdx, beh] = 'E'
                             self.fpho_data_df.loc[startIdx, beh] = 'S'
                             self.fpho_data_df.loc[startIdx+1 : endIdx-1, beh] = 'O'
-                            self.fpho_data_df.loc[endIdx, beh] = 'E'
                         j = j + 2
                     else: 
                         print("\nStart and stops for state behavior:" 
@@ -990,10 +987,10 @@ class fiberObj:
         except KeyError:
             try:
                 full_time = self.fpho_data_df['time' + channel[9:]]
-                time_name = 'time' + channel[3:]
+                time_name = 'time' + channel[9:]
             except KeyError:
                 full_time = self.fpho_data_df['time']
-                time_name = 'time' + channel[3:]
+                time_name = 'time'
         # Finds all times where behavior starts, turns into list
         beh_times = list(self.fpho_data_df[(
             self.fpho_data_df[beh]=='S')][time_name])
