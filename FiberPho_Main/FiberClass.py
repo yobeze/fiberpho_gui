@@ -27,12 +27,16 @@ def lick_to_boris(beh_file, time_unit, beh_false, time_between_bouts):
     ----------
     beh_file : file
         uploaded lickometer file
-
+    #maybe define the other incoming variables, like beh_false
     Returns
     ----------
     boris : Dataframe
         converted data for download
     """
+    
+    ###this function likely needs a test file
+
+    
     boris_df = pd.DataFrame(columns = ['Time', 'Behavior', 'Status'])
     conversion_dict = {'milliseconds':1/1000,'seconds':1,'minutes':60}
     conversion_to_sec = conversion_dict[time_unit]
@@ -204,8 +208,16 @@ class fiberObj:
                                                         'R Score', 'p score'])
         file['Timestamp'] = (file['Timestamp'] - file['Timestamp'][0])
         
+        
+        #another option would be self.framerate = 1 / np.mean(file['Timestamp'].values[1:] - file['Timestamp'].values[:-1])
         self.frame_rate = (file['Timestamp'].iloc[-1]
                             - file['Timestamp'][0])/len(file['Timestamp'])
+        ### ^^ am i reading this wrong, or does it give you seconds / frame instead of frames / second? 
+        # also I think this might give a miniscuely wrong wrong count
+        # ^^^
+        
+        
+
         if start_time == 0:
             self.start_idx = 0
         else:
@@ -214,6 +226,7 @@ class fiberObj:
         if stop_time == -1:
             self.stop_idx = len(file['Timestamp'])
         else:
+            #find the index of the timestamp that stop_time is closest <= to 
             self.stop_idx = np.searchsorted(file['Timestamp'], stop_time) 
         
         time_slice = file.iloc[self.start_idx : self.stop_idx]
