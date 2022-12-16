@@ -263,9 +263,22 @@ class fiberObj:
         time_slice.columns = time_slice.columns.str.replace('Flags', 'LedState')
 
         led_states = time_slice['LedState'][2:8].unique()
+        
+        ###can you define what this is?vvvvvvvvvvvv
         npm_dict = {'Green' : {2, 10, 18, 34, 66, 130, 258, 514},
                     'Isosbestic':{1, 9, 17, 33, 65, 129, 257, 513},
                     'Red': {4, 12, 20, 36, 68, 132, 260, 516}}
+        
+        
+        
+        ###the following codeblock could simplify this and make it a bit more flexible with:
+        #npm_transpose = {}
+        #for color in npm_dict.keys():
+            #npm_transpose.update({val:color for val in npm_dict[color]})
+        #for color in led_states:
+        #   channel = npm_transpsoe[color]
+        #   data_dict[f'time_{channel}'] =  time_slice[
+                    #time_slice['LedState'] == color]['Timestamp'].values.tolist()
         
         for color in led_states:
             if color in npm_dict['Green']:
@@ -280,7 +293,8 @@ class fiberObj:
                 data_dict['time_Isosbestic'] =  time_slice[
                     time_slice['LedState'] == color][
                     'Timestamp'].values.tolist()
-                
+            ###would it be worth making this more flexible rather than explicitly defining red, green ROI etc? I dont
+            #have a good sense of what these different ROIs are doing, when there are multiple. 
             if green_ROI: 
                 if color in npm_dict['Green'] :
                     data_dict['Raw_Green'] = time_slice[
@@ -296,13 +310,18 @@ class fiberObj:
                     data_dict['Raw_Red'] = time_slice[
                         time_slice['LedState'] == color].iloc[:, red_col].values.tolist() 
                     self.channels.add('Raw_Red')
-            
+        
+        ##########whats this doing?    
         shortest_list = min([len(data_dict[ls]) for ls in data_dict])
         
         for ls in data_dict:
             data_dict[ls] = data_dict[ls][:shortest_list-1]
+            
+
         self.fpho_data_df = pd.DataFrame.from_dict(data_dict)
         time_cols = [col for col in self.fpho_data_df.columns if 'time' in col]
+        
+        ######taking the mean time across multiple channels to squish all the data into a single row?
         self.fpho_data_df.insert(0, 'time', self.fpho_data_df[time_cols].mean(axis = 1))
 
     
