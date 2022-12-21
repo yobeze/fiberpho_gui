@@ -34,6 +34,7 @@ Command to run script:
 current_version = 1
 pn.extension('terminal', notifications = True, sizing_mode = 'stretch_width')
 pn.extension('plotly')
+pn.extension(loading_spinner='dots', loading_color='#00aa41')
 #Dictionary of fiber objects
 fiber_objs = {}
 #Dataframe of object's info
@@ -53,7 +54,10 @@ df = pd.DataFrame()
 def run_read_csv(event):
     value = fpho_input.value
     global df
+    illegal_chars = "#<>%&{}\/!$ ?*+`|!:'@="
     
+    for char in illegal_chars:
+        obj_name = obj_name.replace(char, "_")
     try:
         ## Look into PyArrow backend for faster CSV reading times ##
         string_io = io.StringIO(value.decode("utf8"))
@@ -72,11 +76,7 @@ def run_init_fiberobj(event):
     # value = fpho_input.value
     file_name = fpho_input.filename
     obj_name = input_1.value
-    illegal_chars = "#<>%&{}\/!$ ?*+`|!:'@="
     global df
-    
-    for char in illegal_chars:
-        obj_name = obj_name.replace(char, "_")
     
     if npm_format.value:
         fiber_num = input_2.value
@@ -96,7 +96,21 @@ def run_init_fiberobj(event):
         pn.state.notifications.error(
             'Error: Please check logger for more info', duration = 4000)
         print('There is already an object with this name')
-        return  
+        return
+        
+    # try:
+    #     ## Look into PyArrow backend for faster CSV reading times ##
+    #     string_io = io.StringIO(value.decode("utf8"))
+    #     df = pd.read_csv(string_io) #Read into dataframe
+    #     if df:
+    #         upload_button.disabled = False
+    # except AttributeError:
+    #     print("Make sure you choose a file")
+    #     return
+    # except PermissionError:
+    #     print("You do not have permission to access this file")
+    #     return
+          
     try:
         #Add to dict if object name does not already exist
         new_obj = fc.fiberObj(df, input_params[0], input_params[1],
@@ -305,8 +319,9 @@ def run_normalize_a_signal(event = None):
                                    sizing_mode = "stretch_width") 
         #Sets figure to plot variable
         try:
-            fig = temp.normalize_a_signal(pick_signal.value, pick_reference.value,
-                                          biexp_thres.value, linfit_type.value, linfit_thres.value)
+            fig = temp.normalize_a_signal(pick_signal.value,
+                                          pick_reference.value, biexp_thres.value,
+                                          linfit_type.value, linfit_thres.value)
             plot_pane.object = fig
             norm_sig_card.append(plot_pane) #Add figure to template
             if save_pdf_norm.value:
@@ -328,9 +343,9 @@ def run_import_behavior_data(event = None):
         filename = behav_input.filename
         file = behav.decode("utf8")
         header_idx = file.find('Behavior')
-        header_line = file[:header_idx].count('\n')            
-        beh_data = pd.read_csv(io.StringIO(file), header=header_line)  # starts at data
-        obj.import_behavior_data(beh_data, filename)
+        header_line = file[:header_idx].count('\n')
+        beh_data = pd.read_csv(io.StringIO(file), header = header_line) # Start of data
+        obj.import_behavior_data(beh_data, filename, 'place_holder')
         fiber_data.loc[obj.obj_name, 'Behavior File'] = obj.beh_filename
         info_table.value = fiber_data
         pn.state.notifications.success('Uploaded Behavior data for '
@@ -452,12 +467,12 @@ def run_beh_specific_pearsons(event = None):
         channel2 = beh_corr_channel_selecta2.value
         #Creates pane for plot
         plot_pane = pn.pane.Plotly(height = 300,
-                                    sizing_mode = "stretch_width")
+                                     sizing_mode = "stretch_width")
         try:
             plot_pane.object = obj1.behavior_specific_pearsons(obj2,
-                                                                channel1,
-                                                                channel2, 
-                                                                behavior)
+                                                             channel1,
+                                                             channel2, 
+                                                             behavior)
             beh_corr_card.append(plot_pane) #Add figure to template 
             if save_pdf_beh_corr.value:
                 fig.write_image(name1 + '_' + name2 + '_' + behavior + "_correlation.pdf")
@@ -465,9 +480,9 @@ def run_beh_specific_pearsons(event = None):
             logger.error(traceback.format_exc())
             pn.state.notifications.error(
                 'Error: Please check logger for more info', duration = 4000)
-            continue 
+            continue
     return
-
+        
 
 #Updates available signal options based on selected object
 def update_selecta_options(event = None): 
@@ -481,7 +496,7 @@ def update_selecta_options(event = None):
             available_channels = temp.channels & available_channels
         pick_signal.options = list(available_channels)
         pick_signal.value = list(available_channels)[0]
-        pick_reference.options = list(available_channels)+[None]
+        pick_reference.options = list(available_channels) + [None]
         pick_reference.value = list(available_channels)[0]
     
     # Plot Behav card
@@ -519,9 +534,10 @@ def update_selecta_options(event = None):
     available_channels2 = obj2.channels
     channel1_selecta.options = list(available_channels1)
     channel2_selecta.options = list(available_channels2)
+    
     channel1_selecta.value = list(available_channels1)[0]
-    channel2_selecta.value = list(available_channels2)[0]    
-
+    channel2_selecta.value = list(available_channels2)[0]
+    
     #Correlation for a behavior
     name1 = beh_corr_selecta1.value
     name2 = beh_corr_selecta2.value
@@ -533,8 +549,10 @@ def update_selecta_options(event = None):
     beh_corr_channel_selecta1.options = list(available_channels1)
     beh_corr_channel_selecta2.options = list(available_channels2)
     beh_corr_behavior_selecta.options = list(available_behaviors)
+    
     beh_corr_channel_selecta1.value = list(available_channels1)[0]
     beh_corr_channel_selecta2.value = list(available_channels2)[0]
+
     return
     
 # Clear plots by card function
@@ -895,14 +913,13 @@ plot_raw_card = pn.Card(plot_raw_widget, raw_plot_ops,
 
 norm_selecta = pn.widgets.MultiSelect(name = 'Fiber Objects', value = [],
                                       options = [], )
-pick_signal = pn.widgets.Select(name = 'Signal', value = [], options = [])
-pick_reference = pn.widgets.Select(name = 'Reference', value = [], options = [])
+pick_signal = pn.widgets.Select(name = 'Signal', options = [])
+pick_reference = pn.widgets.Select(name = 'Reference', options = [])
 biexp_thres = pn.widgets.FloatInput(name = 'Biexpoential goodness of fit threshold(R^2)', value = 0.05,
-                                       width = 80)
+                                        width = 80)
 linfit_type = pn.widgets.Select(name = 'Fit type for motion correction', options = ['Least squares', 'Quartile fit'])
 linfit_thres  = pn.widgets.FloatInput(name = 'Linfit goodness of fit threshold(R^2)', value = 0.05,
-                                       width = 80)
-                                       
+                                        width = 80)
 #Buttons
 norm_sig_btn = pn.widgets.Button(name = 'Normalize Signal',
                                  button_type = 'primary', width = 200,
@@ -956,12 +973,12 @@ lick_input = pn.widgets.FileInput(name = 'Upload Lickometer Data',
 
 #Buttons
 upload_beh_btn = pn.widgets.Button(name = 'Read Behavior Data',
-                                   button_type = 'primary', width = 200,
-                                   sizing_mode = 'stretch_width',
+                                   button_type = 'primary', width = 100,
+                                   sizing_mode = 'fixed',
                                    align = 'start')
 upload_beh_btn.on_click(run_import_behavior_data) #Button action
 upload_lick_btn = pn.widgets.Button(name = 'Upload', button_type = 'primary',
-                                    width = 100, sizing_mode = 'fixed')
+                                    width = 100, height = 25, sizing_mode = 'fixed')
 upload_lick_btn.on_click(run_convert_lick)
 
 upload_beh_info = pn.pane.Markdown("""
@@ -969,34 +986,32 @@ upload_beh_info = pn.pane.Markdown("""
                                         dataframe to update and include subject, behavior,
                                         and status columns to the dataframe.
                                     """, width = 200)
-
-convert_info = pn.pane.Markdown(""" - Upload lickometer data to be converted 
-                                to behavior file formatting <br> - Returns downloadable
-                                csv after conversion has been completed""",
+convert_info = pn.pane.Markdown(""" - Imports user uploaded behavior data and reads 
+                                    dataframe to update and include subject, behavior,
+                                    and status columns to the dataframe.""" ,
                                 width = 200)
-
-time_unit = pn.widgets.Select(name = 'Time unit', value = ['milliseconds'],
-                              options = ['milliseconds', 'seconds', 'minutes'])
+time_unit = pn.widgets.Select(name = 'Time unit', value = 'milliseconds',
+                              options = ['milliseconds', 'seconds', 'minutes'],
+                              width = 100, sizing_mode = 'fixed')
 
 beh_false = pn.widgets.TextInput(name = 'value where behavior is not occuring',
-                                 value = '0', width = 80)
+                                 value = '0', width = 100, sizing_mode = 'fixed')
 
 time_between_bouts = pn.widgets.FloatInput(name = 'minimun time between bouts (s)',
-                                          value = 0.5, width = 80)
+                                          value = 0.5, width = 80, sizing_mode = 'fixed')
 
 
 #Box
 behav_options = pn.Column(behav_input, upload_beh_btn)
-lick_row = pn.Row(time_unit, beh_false, time_between_bouts)
+lick_row = pn.Row(pn.Column(time_unit, time_between_bouts, upload_lick_btn), beh_false)
 lick_options = pn.Column(lick_input,
-                         lick_row, upload_lick_btn)
+                         lick_row)
 beh_tabs = pn.Tabs(('BORIS format', behav_options),
                    ('Alternative format', lick_options))
 
 upload_beh_widget = pn.WidgetBox(behav_selecta, beh_tabs, height = 270)
-upload_beh_card = pn.Card(upload_beh_widget, title = 'Import Behavior', 
+upload_beh_card = pn.Card(upload_beh_widget, title = 'Import Behavior',
                           background = 'WhiteSmoke', collapsed = False)
-
 
 # ----------------------------------------------------- # 
 
@@ -1120,7 +1135,7 @@ clear_zscore.on_click(clear_plots)
 zscore_options = pn.Column(zscore_selecta, options_btn, zchannel_selecta, 
                            zbehs_selecta, time_before, time_after)
 baseline_options = pn.Column(z_score_note, baseline_selecta, 
-                                baseline_start, baseline_end)
+                             baseline_start, baseline_end)
 trace_options = pn.Column(first_trace, last_trace, show_every)
 check_boxes = pn.Row(save_csv, percent_bool)
 tabs = pn.Tabs(('Z-Score', zscore_options),
