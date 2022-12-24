@@ -310,6 +310,7 @@ def run_plot_raw_trace(event):
             plot_raw_card.append(plot_pane) #Add figure to template
             if save_pdf_rawplot.value:
                 fig.write_image(temp.obj_name + "_raw_data.pdf")
+                print("Saved at: " + os.path.abspath(__file__))
         #playsound(correct_chime)
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -338,6 +339,7 @@ def run_normalize_a_signal(event = None):
             norm_sig_card.append(plot_pane) #Add figure to template
             if save_pdf_norm.value:
                 fig.write_image(objs + '_' + pick_signal.value + "_normalized.pdf")
+                print("Saved at: " + os.path.abspath(__file__))
 
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -394,6 +396,7 @@ def run_plot_behavior(event = None):
             plot_beh_card.append(plot_pane) #Add figure to template
             if save_pdf_beh.value:
                 fig.write_image(objs + "_behavior_plot.pdf")
+                print("Saved at: " + os.path.abspath(__file__))
         except Exception as e:
             logger.error(traceback.format_exc())
             pn.state.notifications.error(
@@ -432,6 +435,7 @@ def run_plot_zscore(event = None):
 
                     if save_pdf_PSTH.value:
                         fig.write_image(objs + "_PSTH.pdf")
+                        print("Saved at: " + os.path.abspath(__file__))
                 except Exception as e:
                     logger.error(traceback.format_exc())
                     pn.state.notifications.error(
@@ -460,6 +464,7 @@ def run_pearsons_correlation(event = None):
         pearsons_card.append(plot_pane) #Add figure to template
         if save_pdf_time_corr.value:
             fig.write_image(name1 + '_' + name2 + "_correlation.pdf")
+            print("Saved at: " + os.path.abspath(__file__))
     except ValueError:
         return
     except Exception as e:
@@ -488,6 +493,7 @@ def run_beh_specific_pearsons(event = None):
             beh_corr_card.append(plot_pane) #Add figure to template 
             if save_pdf_beh_corr.value:
                 fig.write_image(name1 + '_' + name2 + '_' + behavior + "_correlation.pdf")
+                print("Saved at: " + os.path.abspath(__file__))
         except Exception as e:
             logger.error(traceback.format_exc())
             pn.state.notifications.error(
@@ -637,6 +643,7 @@ def run_convert_lick(event):
                                                width = 400,
                                                sizing_mode = 'fixed')
             beh_tabs[1].append(out_file)
+            print("Saved at: " + os.path.abspath(__file__))
         except Exception as e:
             logger.error(traceback.format_exc())
             pn.state.notifications.error(
