@@ -34,7 +34,7 @@ Command to run script:
 current_version = 1
 pn.extension('terminal', notifications = True, sizing_mode = 'stretch_width')
 pn.extension('plotly')
-pn.extension(loading_spinner='dots', loading_color='#00aa41')
+pn.extension(loading_spinner='arcs', loading_color='#00aa41')
 #Dictionary of fiber objects
 fiber_objs = {}
 #Dataframe of object's info
@@ -54,20 +54,22 @@ df = pd.DataFrame()
 def run_read_csv(event):
     value = fpho_input.value
     global df
-    illegal_chars = "#<>%&{}\/!$ ?*+`|!:'@="
-    
-    for char in illegal_chars:
-        obj_name = obj_name.replace(char, "_")
     try:
         ## Look into PyArrow backend for faster CSV reading times ##
+        # read_csv_btn.loading = True
         string_io = io.StringIO(value.decode("utf8"))
         df = pd.read_csv(string_io) #Read into dataframe
         if not df.empty:
+            # read_csv_btn.loading = False
             upload_button.disabled = False # Enables create obj button
     except AttributeError:
+        # read_csv_btn.loading = False
+        upload_button.disabled = False # Enables create obj button
         print("Make sure you choose a file")
         return
     except PermissionError:
+        # read_csv_btn.loading = False
+        upload_button.disabled = False # Enables create obj button
         print("You do not have permission to access this file")
         return
     
@@ -77,7 +79,10 @@ def run_init_fiberobj(event):
     file_name = fpho_input.filename
     obj_name = input_1.value
     global df
+    illegal_chars = "#<>%&{}\/!$ ?*+`|!:'@="
     
+    for char in illegal_chars:
+        obj_name = obj_name.replace(char, "_")
     if npm_format.value:
         fiber_num = input_2.value
     else:
@@ -267,12 +272,19 @@ def run_save_fiberobj(event = None):
     for obj in save_obj_selecta.value:
         try:
             temp = fiber_objs[obj]
-            with open(obj + '.pickle', 'wb') as handle:
-                pickle.dump(temp, handle)
-            pn.state.notifications.success('# ' + temp.obj_name
-                                           + ' pickled successfully',
-                                           duration = 4000)
-            print(temp.obj_name + " saved")
+            if os.path.exists(temp.obj_name + ".pickle"):
+                pn.state.notifications.error(
+                    'Error: Please check logger for more info', duration = 4000)
+                logger.error(traceback.format_exc())
+                print("Error: This filename already exists, please try again.")
+                return
+            else:
+                with open(obj + '.pickle', 'wb') as handle:
+                    pickle.dump(temp, handle)
+                pn.state.notifications.success('# ' + temp.obj_name
+                                               + ' pickled successfully',
+                                               duration = 4000)
+                print(temp.obj_name + " saved at: " + os.path.abspath(__file__))
         except Exception as e:
             pn.state.notifications.error(
                 'Error: Please check logger for more info', duration = 4000)
@@ -345,7 +357,7 @@ def run_import_behavior_data(event = None):
         header_idx = file.find('Behavior')
         header_line = file[:header_idx].count('\n')
         beh_data = pd.read_csv(io.StringIO(file), header = header_line) # Start of data
-        obj.import_behavior_data(beh_data, filename, 'place_holder')
+        obj.import_behavior_data(beh_data, filename)
         fiber_data.loc[obj.obj_name, 'Behavior File'] = obj.beh_filename
         info_table.value = fiber_data
         pn.state.notifications.success('Uploaded Behavior data for '
@@ -362,7 +374,7 @@ def run_import_behavior_data(event = None):
         logger.error(traceback.format_exc())
         pn.state.notifications.error(
             'Error: Please check logger for more info', duration = 4000)
-        return
+    
     return
                 
 #Plot behavior on a full trace
@@ -760,7 +772,7 @@ upload_button = pn.widgets.Button(name = 'Create Object',
 read_csv_btn = pn.widgets.Button(name = 'Read CSV',
                                  button_type = 'primary',
                                  width = 500, sizing_mode = 'stretch_width',
-                                 align = 'end')
+                                 align = 'start', loading = False)
 
 read_csv_btn.on_click(run_read_csv) # Button action
 
