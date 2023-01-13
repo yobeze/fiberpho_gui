@@ -196,8 +196,8 @@ class fiberObj:
         self.correlation_results = pd.DataFrame(columns = ['Object Name', 'Channel', 'Obj2', 'Obj2 Channel',
                                                            'start_time', 'end_time', 
                                                            'R Score', 'p score'])
-        self.beh_corr_results = pd.DataFrame(columns = ['Object Name', 'Channel', 'Obj2', 'Obj2 Channel',
-                                                        'Behavior', 'Number of Events' 
+        self.beh_corr_results = pd.DataFrame(columns = ['Object 1 Name', 'Object 1 Channel', 'Object 2 Name',
+                                                        'Object 2 Channel', 'Behavior', 'Number of Events', 
                                                         'R Score', 'p score'])
         file['Timestamp'] = (file['Timestamp'] - file['Timestamp'][0])
         
@@ -412,7 +412,7 @@ class fiberObj:
                                                            'start_time', 'end_time', 
                                                            'R Score', 'p score'])
         self.beh_corr_results = pd.DataFrame(columns = ['Object Name', 'Channel', 'Obj2', 'Obj2 Channel',
-                                                        'Behavior', 'Number of Events' 
+                                                        'Behavior', 'Number of Events', 
                                                         'R Score', 'p score'])
 
         # Decide what to do with start_time, stop_time, start_idx and stop_idx. Do I even want to keep them as variables??? idk
@@ -509,7 +509,7 @@ class fiberObj:
 
     #Plot fitted exp function
     def normalize_a_signal(self, signal, reference,
-                           biexp_thres, linfit_type, linfit_thres):
+                           biexp_thres, linfit_type):
         """
         Creates a plot normalizing 1 fiber data to an
         exponential of the form y=A*exp(-B*X)+C*exp(-D*x)
@@ -614,12 +614,7 @@ class fiberObj:
             adjusted_ref=[AL * j + BL for j in normed_ref]
             normed_to_ref=[(k / j) for k,j in zip(normed_sig, adjusted_ref)]
                 
-            linRsquare = np.corrcoef(adjusted_ref, normed_sig)[0,1] ** 2
-            #linRsquare = np.dot(adjusted_ref, normed_sig)
-            #linRsquare = np.sum(np.abs(np.array(adjusted_ref) - np.array(normed_sig)))
-
-            if refRsquare < linfit_thres:
-                normed_to_ref=normed_sig
+            linR = np.corrcoef(adjusted_ref, normed_sig)[0,1]
 
             # below saves all the variables we generated to the df #
             #  data frame inside the obj ex. self 
@@ -644,7 +639,7 @@ class fiberObj:
                                         "Signal Normalized to Biexponential",
                                         "Biexponential Fitted to Ref (R^2 = " + str(refRsquare) + ")", 
                                         "Reference Normalized to Biexponential",
-                                        "Reference Linearly Fitted to Signal(R^2 = " + str(linRsquare) + ")",
+                                        "Reference Linearly Fitted to Signal(R = " + str(linR) + ")",
                                         "Final Normalized Signal"),
                         shared_xaxes = True, vertical_spacing = 0.1)
             fig.add_trace(
@@ -1096,9 +1091,9 @@ class fiberObj:
                 trace = self.fpho_data_df.loc[
                     start_idx : end_idx, channel].values.tolist()
                 if percent_bool:
-                    if not base_option:
-                        base_mean = np.mean(trace)
-                    this_Zscore=[(i / base_mean)*100 for i in trace]
+                    if base_option == 'Each event':
+                        base_mean = np.nanmean(trace)
+                    this_Zscore=[((i / base_mean)-1)*100 for i in trace]
                 else:
                     this_Zscore=self.zscore(trace, base_mean, base_std)
                 # Adds each trace to a dict
@@ -1175,6 +1170,8 @@ class fiberObj:
             showlegend = True),
             row = 1, col = 2
             )
+        #fig.update_yaxes(range = [.994, 1.004])
+
         fig.update_layout(
             title = 'Z-score of ' + beh + ' for ' 
                     + self.obj_name + ' in channel ' + channel
@@ -1436,8 +1433,8 @@ class fiberObj:
         fig.update_xaxes(title_text = 'Time (s)', col = 1, row = 1)
         fig.update_yaxes(title_text = 'Zscore', col = 1, row = 1)
 
-        results = {'Object Name': self.obj_name, 'Channel': channel, 'Object2 Name': obj2.obj_name, 'rObj2 Channel': channel,
-                   'Behavior' : beh, 'Number of Events': 'unknown',  'R Score' : r, 'p score': p}
+        results = {'Object 1 Name': self.obj_name, 'Object 1 Channel': channel1, 'Object 2 Name': obj2.obj_name, 'Object 2 Channel': channel2,
+                   'Behavior' : beh, 'Number of Events': self.fpho_data_df[beh].value_counts()['S'],  'R Score' : r, 'p score': p}
         self.beh_corr_results = self.beh_corr_results.append(results, ignore_index = True)       
         
         return fig
