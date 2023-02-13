@@ -19,54 +19,6 @@ import re
 
 pn.extension('terminal')
 
-def lick_to_boris(beh_file, time_unit, beh_false, time_between_bouts):
-    """
-    Converts lickometer data to a BORIS file that is readable by the GUI
-
-    Parameters
-    ----------
-    beh_file : file
-        uploaded lickometer file
-
-    Returns
-    ----------
-    boris : Dataframe
-        converted data for download
-    """
-    boris_df = pd.DataFrame(columns = ['Time', 'Behavior', 'Status'])
-    conversion_dict = {'milliseconds':1/1000,'seconds':1,'minutes':60}
-    conversion_to_sec = conversion_dict[time_unit]
-    behaviors = list(beh_file.columns)
-    behaviors.remove('Time')
-    print(behaviors)
-    for beh in behaviors:
-        trimmed = beh_file[beh_file[beh] != beh_false]
-        starts = [(trimmed.iloc[0]['Time'] - beh_file.iloc[0]['Time']) * conversion_to_sec]
-        stops = []
-        diffs = np.diff(trimmed.index)
-
-        for i, v in enumerate(diffs):
-            if v > (time_between_bouts / conversion_to_sec):
-                stops.append((trimmed.iloc[i]['Time'] 
-                              - beh_file.iloc[0]['Time']) * conversion_to_sec)
-                if i+1 < len(diffs):
-                    starts.append((trimmed.iloc[i+1]['Time'] 
-                                   - beh_file.iloc[0]['Time']) * conversion_to_sec)
-        stops.append((trimmed.iloc[-1]['Time'] 
-                      - beh_file.iloc[0]['Time']) * conversion_to_sec)
-
-        time = starts + stops
-        time.sort()
-        status = ['START'] * len(time)
-        half = len(time) / 2
-        status[1::2] = ['STOP'] * int(half)
-        behavior = [beh] * len(time)
-        beh_df = pd.DataFrame(data = {'Time': time, 'Behavior': behavior, 'Status' : status})
-        boris_df = pd.concat([boris_df, beh_df])
-    boris_df.sort_values(by = 'Time')
-    return boris_df
-
-
 class fiberObj:
     
     """
@@ -188,11 +140,11 @@ class fiberObj:
                            'Normalized_Green': 'MediumSeaGreen', 'Normalized_Red': 'Dark_Red',
                            'Normalized_Isosbestic':'DeepSkyBlue'}
         self.z_score_results = pd.DataFrame(columns = ['Object Name', 'Behavior', 'Channel', 'delta Z_score',
-                                                       'Max Z_score', 'Max Z_score Time',
-                                                       'Min Z_score', 'Min Z_score Time',
-                                                       'Average Z_score Before', 'Average Z_score After',
-                                                       'Time Before', 'Time After', 'Number of events',
-                                                       'Z_score Baseline'])
+                                                       'Max value', 'Time of max value',
+                                                       'Min value', 'Time of min value',
+                                                       'Average value before event', 'Average value after event',
+                                                       'Time before', 'Time after', 'Number of events',
+                                                       'Baseline', 'Normalization type'])
         self.correlation_results = pd.DataFrame(columns = ['Object Name', 'Channel', 'Obj2', 'Obj2 Channel',
                                                            'start_time', 'end_time', 
                                                            'R Score', 'p score'])
@@ -481,7 +433,7 @@ class fiberObj:
 
         fig = make_subplots(rows = 1, cols = 1, shared_xaxes = True,
                             vertical_spacing = 0.02, x_title = "Time (s)",
-                            y_title = "Fluorescence")
+                            y_title = "Fluorescence (au)")
         for channel in self.channels:
             try:
                 time = self.fpho_data_df['time' + channel[3:]]
@@ -537,7 +489,8 @@ class fiberObj:
             sig_time = self.fpho_data_df['time']
         
         sig = self.fpho_data_df[signal]
-        popt, pcov = curve_fit(self.fit_exp, sig_time, sig, p0 = (1.0, 0, 1.0, 0, 0),
+        popt, pcov = curve_fit(self.fit_exp, sig_time, sig/(1.5*(max(sig))),
+                               p0 = (1.0, 0, 1.0, 0, 0),
                                bounds = (0, np.inf))
 
         AS = popt[0]  # A value
@@ -547,7 +500,7 @@ class fiberObj:
         ES = popt[4]  # E value
         
         # Generate fit line using calculated coefficients
-        fitSig = self.fit_exp(sig_time, AS, BS, CS, DS, ES)
+        fitSig = 1.5*(max(sig))*self.fit_exp(sig_time, AS, BS, CS, DS, ES)
         sigRsquare = np.corrcoef(sig, fitSig)[0,1] ** 2
         
         if sigRsquare < biexp_thres:
@@ -572,8 +525,8 @@ class fiberObj:
             except KeyError:
                 ref_time = self.fpho_data_df['time']
             ref = self.fpho_data_df[reference]
-            popt, pcov = curve_fit(self.fit_exp, ref_time, ref, p0=(1.0, 0, 1.0, 0, 0),
-                                   bounds = (0,np.inf))
+            popt, pcov = curve_fit(self.fit_exp, ref_time, ref/(1.5*(max(ref))),
+                                   p0=(1.0, 0, 1.0, 0, 0), bounds = (0,np.inf))
 
             AR = popt[0]  # A value
             BR = popt[1]  # B value
@@ -583,7 +536,7 @@ class fiberObj:
 
             # Generate fit line using calculated coefficients
 
-            fitRef = self.fit_exp(ref_time, AR, BR, CR, DR, ER)
+            fitRef = 1.5*(max(ref))*self.fit_exp(ref_time, AR, BR, CR, DR, ER)
             refRsquare = np.corrcoef(ref, fitRef)[0,1] ** 2
 
             if refRsquare < biexp_thres:
@@ -597,7 +550,7 @@ class fiberObj:
             normed_ref = [(k / j) for k,j in zip(ref, fitRef)]      
                   
             if linfit_type == 'Least squares':
-                results = ss.linregress(normed_ref, normed_sig)
+                results = ss.linregress(normed_ref, normed_sig, alternative = 'greater')
                 AL = results.slope
                 BL = results.intercept
             
@@ -634,7 +587,7 @@ class fiberObj:
         self.fpho_data_df.loc[:,'Normalized_' + signal[4:]] = normed_to_ref
         self.channels.add('Normalized_' + signal[4:])
         if reference is not None:
-            fig = make_subplots(rows = 3, cols = 2, x_title = 'Time(s)',
+            fig = make_subplots(rows = 3, cols = 2, x_title = 'Time(s)', y_title = 'Flourescence (au)',
                         subplot_titles=("Biexponential Fitted to Signal (R^2 = " + str(sigRsquare) + ")",
                                         "Signal Normalized to Biexponential",
                                         "Biexponential Fitted to Ref (R^2 = " + str(refRsquare) + ")", 
@@ -742,10 +695,12 @@ class fiberObj:
                 row = 3, col = 2
                 )
         else:
-            fig = make_subplots(rows = 1, cols = 2, x_title = 'Time(s)',
-                        subplot_titles=("Biexponential Fitted to Signal(R^2 = " + str(sigRsquare) + ")",
+            fig = make_subplots(rows = 1, cols = 2, 
+                                subplot_titles=("Biexponential Fitted to Signal(R^2 = " 
+                                        + str(sigRsquare) + ")",
                                         "Signal Normalized to Biexponential"),
-                        shared_xaxes = True, vertical_spacing = 0.1)
+                        shared_xaxes = True, vertical_spacing = 0.1,
+                        x_title = "Time (s)", y_title = "Fluorescence (au)")
             fig.add_trace(
                 go.Scatter(
                 x = sig_time,
@@ -855,7 +810,7 @@ class fiberObj:
             user selected behaviors
         
         channels : list
-            user selected channels
+            user selected channel
             
         Returns
         ----------
@@ -865,7 +820,9 @@ class fiberObj:
         
         fig = make_subplots(rows = len(channels), cols = 1,
                             subplot_titles = [channel for channel in channels],
-                            shared_xaxes = True)
+                            shared_xaxes = True,
+                            x_title = "Time (s)",
+                            y_title = "Fluorescence (au)")
         
         for i, channel in enumerate(channels):
             try:
@@ -924,7 +881,6 @@ class fiberObj:
                     showarrow = False,
                     row = i + 1, col = 1
                     )
-                fig.update_layout(title = behaviorname + ' for ' + self.obj_name)
         return fig
         
     
@@ -1093,9 +1049,11 @@ class fiberObj:
                 if percent_bool:
                     if base_option == 'Each event':
                         base_mean = np.nanmean(trace)
+                        norm_type = 'Percent'
                     this_Zscore=[((i / base_mean)-1)*100 for i in trace]
                 else:
-                    this_Zscore=self.zscore(trace, base_mean, base_std)
+                    this_Zscore = self.zscore(trace, base_mean, base_std)
+                    norm_type = 'Z-score'
                 # Adds each trace to a dict
                 Zscore_data['event' + str(n_events)] = this_Zscore 
                 
@@ -1175,18 +1133,23 @@ class fiberObj:
         fig.update_layout(
             title = 'Z-score of ' + beh + ' for ' 
                     + self.obj_name + ' in channel ' + channel
-            )      
+            )   
+        fig.update_xaxes(title_text = 'Time (s)')
+        fig.update_yaxes(title_text = 'Fluorescence (au)', col = 1, row = 1)
+        fig.update_yaxes(title_text = norm_type, col = 2, row = 1)
+
         results = {'Object Name': self.obj_name, 'Behavior': beh, 'Channel' : channel,
-                   'Max Z_score' : max(avg_Zscore),
-                   'Max Z_score Time' : graph_time[np.argmax(avg_Zscore)], 
-                   'Min Z_score': min(avg_Zscore), 
-                   'Min Z_score Time' : graph_time[np.argmin(avg_Zscore)],
+                   'Max value' : max(avg_Zscore),
+                   'Time of max ' : graph_time[np.argmax(avg_Zscore)], 
+                   'Min value': min(avg_Zscore), 
+                   'Time of min' : graph_time[np.argmin(avg_Zscore)],
                    'delta Z_score' : max(avg_Zscore) - min(avg_Zscore), 
-                   'Average Z_score Before' : np.mean(avg_Zscore[:zero_idx]),
-                   'Average Z_score After' : np.mean(avg_Zscore[zero_idx:]),
-                   'Time Before':time_before, 'Time After':time_after,
-                   'Number of events' : n_events, 'Z_score Baseline' : zscore_baseline}
-        self.z_score_results = self.z_score_results.append(results, ignore_index = True)
+                   'Average value before event' : np.mean(avg_Zscore[:zero_idx]),
+                   'Average value after event' : np.mean(avg_Zscore[zero_idx:]),
+                   'Time before':time_before, 'Time after':time_after,
+                   'Number of events' : n_events, 'Baseline' : zscore_baseline,
+                   'Normalization type' : norm_type}
+        self.z_score_results = self.z_score_results.concat(results, ignore_index = True)
         if save_csv:
             Zscore_data.to_csv(self.obj_name + '_' + channel + '_' + beh +
                                '_Baseline_' + zscore_baseline + '.csv') 
@@ -1350,11 +1313,15 @@ class fiberObj:
             )
         results = {'Object Name': self.obj_name, 'Channel' : channel1, 'Obj2': obj2.obj_name, 'Obj2 Channel': channel2, 'start_time' : start_time,
                    'end_time' : end_time, 'R Score' : str(r), 'p score': str(p)}
-        self.correlation_results = self.correlation_results.append(results, ignore_index = True)
+        self.correlation_results = self.correlation_results.concat(results, ignore_index = True)
         fig.update_layout(
             title = 'Correlation between ' + self.obj_name + ' and ' 
                   + obj2.obj_name + ' is, ' + str(r) + ' p = ' + str(p)
             )
+        fig.update_xaxes(title_text = self.obj_name + " " + channel1, col = 2, row = 1)
+        fig.update_yaxes(title_text = obj2.obj_name + " " + channel2, col = 2, row = 1)
+        fig.update_xaxes(title_text = 'Time (s)', col = 1, row = 1)
+        fig.update_yaxes(title_text = 'Fluorescence (au)', col = 1, row = 1)
         return fig
         
 
@@ -1428,15 +1395,62 @@ class fiberObj:
                 title = 'Correlation between ' + self.obj_name + ' and ' 
                   + obj2.obj_name + ' during ' + beh + ' is, ' + str(r) + ' p = ' + str(p)
                 )
-        fig.update_xaxes(title_text = self.obj_name + " " + channel1 + ' Zscore', col = 2, row = 1)
-        fig.update_yaxes(title_text = obj2.obj_name + " " + channel2 + ' Zscore', col = 2, row = 1)
+        fig.update_xaxes(title_text = self.obj_name + " " + channel1, col = 2, row = 1)
+        fig.update_yaxes(title_text = obj2.obj_name + " " + channel2, col = 2, row = 1)
         fig.update_xaxes(title_text = 'Time (s)', col = 1, row = 1)
-        fig.update_yaxes(title_text = 'Zscore', col = 1, row = 1)
+        fig.update_yaxes(title_text = 'Fluorescence (au)', col = 1, row = 1)
 
         results = {'Object 1 Name': self.obj_name, 'Object 1 Channel': channel1, 'Object 2 Name': obj2.obj_name, 'Object 2 Channel': channel2,
                    'Behavior' : beh, 'Number of Events': self.fpho_data_df[beh].value_counts()['S'],  'R Score' : r, 'p score': p}
-        self.beh_corr_results = self.beh_corr_results.append(results, ignore_index = True)       
+        self.beh_corr_results = self.beh_corr_results.concat(results, ignore_index = True)       
         
         return fig
     
 ##### End Class Functions #####
+
+def lick_to_boris(beh_file, time_unit, beh_false, time_between_bouts):
+    """
+    Converts lickometer data to a BORIS file that is readable by the GUI
+
+    Parameters
+    ----------
+    beh_file : file
+        uploaded lickometer file
+
+    Returns
+    ----------
+    boris : Dataframe
+        converted data for download
+    """
+    boris_df = pd.DataFrame(columns = ['Time', 'Behavior', 'Status'])
+    conversion_dict = {'milliseconds':1/1000,'seconds':1,'minutes':60}
+    conversion_to_sec = conversion_dict[time_unit]
+    behaviors = list(beh_file.columns)
+    behaviors.remove('Time')
+    print(behaviors)
+    for beh in behaviors:
+        trimmed = beh_file[beh_file[beh] != beh_false]
+        starts = [(trimmed.iloc[0]['Time'] - beh_file.iloc[0]['Time']) * conversion_to_sec]
+        stops = []
+        diffs = np.diff(trimmed.index)
+
+        for i, v in enumerate(diffs):
+            if v > (time_between_bouts / conversion_to_sec):
+                stops.concat((trimmed.iloc[i]['Time'] 
+                              - beh_file.iloc[0]['Time']) * conversion_to_sec)
+                if i+1 < len(diffs):
+                    starts.concat((trimmed.iloc[i+1]['Time'] 
+                                   - beh_file.iloc[0]['Time']) * conversion_to_sec)
+        stops.concat((trimmed.iloc[-1]['Time'] 
+                      - beh_file.iloc[0]['Time']) * conversion_to_sec)
+
+        time = starts + stops
+        time.sort()
+        status = ['START'] * len(time)
+        half = len(time) / 2
+        status[1::2] = ['STOP'] * int(half)
+        behavior = [beh] * len(time)
+        beh_df = pd.DataFrame(data = {'Time': time, 'Behavior': behavior, 'Status' : status})
+        boris_df = pd.concat([boris_df, beh_df])
+    boris_df.sort_values(by = 'Time')
+    return boris_df

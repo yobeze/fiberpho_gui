@@ -1,6 +1,3 @@
-# %load_ext autoreload
-
-# %autoreload 2
 import io
 import param
 import panel as pn
@@ -8,7 +5,6 @@ import pandas as pd
 import csv
 import numpy as np
 import os
-
 import sys
 import ipywidgets as ipw
 import time
@@ -20,14 +16,13 @@ from pathlib import Path
 import pickle
 import logging
 import traceback
-from playsound import playsound
+import copy
 import FiberClass as fc
 
 
 '''
 Command to run script:
     Script : panel serve --show FiberGuiScript.py --websocket-max-message-size=104876000 --autoreload
-    Notebook : panel serve FiberGuiNotebook.ipynb --websocket-max-message-size=104876000 --show
 '''
 
 #current obj version
@@ -44,6 +39,7 @@ fiber_data = pd.DataFrame(columns = ['Fiber #',
                                      'Exp. Start Time', 
                                      'Filename',
                                      'Behavior File'])
+
 # Dynamically create dataframe in order to delete
 # from memory later.
 # This (hopefully) avoids keeping the prev. csv
@@ -62,6 +58,9 @@ def run_read_csv(event):
         if not df.empty:
             # read_csv_btn.loading = False
             upload_button.disabled = False # Enables create obj button
+            pn.state.notifications.success('Your file has been loaded',
+                                           duration = 4000)
+            print('Your photometry file has been successfully loaded')
     except AttributeError:
         # read_csv_btn.loading = False
         upload_button.disabled = False # Enables create obj button
@@ -80,7 +79,6 @@ def run_init_fiberobj(event):
     obj_name = input_1.value
     global df
     illegal_chars = "#<>%&{}\/!$ ?*+`|!:'@="
-    
     for char in illegal_chars:
         obj_name = obj_name.replace(char, "_")
     if npm_format.value:
@@ -102,19 +100,6 @@ def run_init_fiberobj(event):
             'Error: Please check logger for more info', duration = 4000)
         print('There is already an object with this name')
         return
-        
-    # try:
-    #     ## Look into PyArrow backend for faster CSV reading times ##
-    #     string_io = io.StringIO(value.decode("utf8"))
-    #     df = pd.read_csv(string_io) #Read into dataframe
-    #     if df:
-    #         upload_button.disabled = False
-    # except AttributeError:
-    #     print("Make sure you choose a file")
-    #     return
-    # except PermissionError:
-    #     print("You do not have permission to access this file")
-    #     return
           
     try:
         #Add to dict if object name does not already exist
@@ -155,11 +140,11 @@ def run_init_fiberobj(event):
                                         'NaN'])
     info_table.value = fiber_data
     existing_objs = fiber_objs
+    
     #Updates selectors with new objects
     update_obj_selectas(existing_objs)
     last_filename = fpho_input.filename
     last_file = fpho_input.value
-    
     return
 
 
@@ -167,43 +152,38 @@ def run_init_fiberobj(event):
 # Upload pickled object files
 def run_upload_fiberobj(event = None):
     upload = upload_pkl_selecta.filename
-    try:
-        for filename in upload:
-            with io.open (filename, 'rb') as file:
-                try:
-                    temp = pickle.load(file)
-                except EOFError:
-                    pn.state.notifications.error(
-                    'Error: Please check logger for more info',
-                    duration = 4000)
-                print("Error uploading " + filename +
-                      ". Ensure this is a valid .pkl file")
-                continue                    
-
-            fiber_objs[temp.obj_name] = temp
-            fiber_data.loc[temp.obj_name] = ([temp.fiber_num,
-                                              temp.animal_num,
-                                              temp.exp_date,
-                                              temp.exp_start_time,
-                                              temp.file_name,
-                                              temp.beh_filename])
-            info_table.value = fiber_data
-            if not hasattr(temp_obj, 'version') and temp_obj != current_version:
+    for filename in upload:
+        with io.open (filename, 'rb') as file:
+            try:
+                temp = pickle.load(file)
+            except EOFError:
                 pn.state.notifications.error(
-                'Warning: Please check logger for more info', duration = 4000)
-                print("This pickle file is out of date." + 
-                    "It may cause problems in certain functions")
-        existing_objs = fiber_objs
-        # Updates all cards with new objects
-        update_obj_selectas(existing_objs)
-        
-        #Object uploaded notification
+                'Error: Please check logger for more info',
+                duration = 4000)
+            print("Error uploading " + filename +
+                  ". Ensure this is a valid .pkl file")
+            continue                    
+        fiber_objs[temp.obj_name] = temp
+        fiber_data.loc[temp.obj_name] = ([temp.fiber_num,
+                                          temp.animal_num,
+                                          temp.exp_date,
+                                          temp.exp_start_time,
+                                          temp.file_name,
+                                          temp.beh_filename])
+        info_table.value = fiber_data
+        if not hasattr(temp_obj, 'version') and temp_obj != current_version:
+            pn.state.notifications.error(
+            'Warning: Please check logger for more info', duration = 4000)
+            print("This pickle file is out of date." + 
+                "It may cause problems in certain functions")
+            #Object uploaded notification
         pn.state.notifications.success('Uploaded ' + temp.obj_name
-                                       + ' object!', duration = 4000)
-        return
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        
+                                   + ' object!', duration = 4000)
+    existing_objs = fiber_objs
+    # Updates all cards with new objects
+    update_obj_selectas(existing_objs)
+    return
+  
 # Combine two objects into one
 def run_combine_objs(event = None):
     obj1 = fiber_objs[combine_obj_selecta1.value]
@@ -227,12 +207,7 @@ def run_combine_objs(event = None):
     except KeyError:
         print('key error')
         return
-    # except IndexError:
-    #     logger.error(traceback.format_exc())
-    #     return
-    # except Exception as e: 
-    #     return
-            #Adds to dict
+
     fiber_objs[new_obj.obj_name] = new_obj
     pn.state.notifications.success('Created ' + new_obj.obj_name +
                                    ' object!', duration = 4000)
@@ -309,9 +284,8 @@ def run_plot_raw_trace(event):
             plot_pane.object = temp.raw_signal_trace() 
             plot_raw_card.append(plot_pane) #Add figure to template
             if save_pdf_rawplot.value:
-                fig.write_image(temp.obj_name + "_raw_data.pdf")
+                plot_pane.object.write_image(temp.obj_name + "_raw_data.pdf")
                 print("Saved at: " + os.path.abspath(__file__))
-        #playsound(correct_chime)
         except Exception as e:
             logger.error(traceback.format_exc())
             pn.state.notifications.error(
@@ -332,15 +306,13 @@ def run_normalize_a_signal(event = None):
                                    sizing_mode = "stretch_width") 
         #Sets figure to plot variable
         try:
-            fig = temp.normalize_a_signal(pick_signal.value,
+            plot_pane.object = temp.normalize_a_signal(pick_signal.value,
                                           pick_reference.value, biexp_thres.value,
                                           linfit_type.value, linfit_thres.value)
-            plot_pane.object = fig
             norm_sig_card.append(plot_pane) #Add figure to template
             if save_pdf_norm.value:
-                fig.write_image(objs + '_' + pick_signal.value + "_normalized.pdf")
+                plot_pane.object.write_image(objs + '_' + pick_signal.value + "_normalized.pdf")
                 print("Saved at: " + os.path.abspath(__file__))
-
         except Exception as e:
             logger.error(traceback.format_exc())
             pn.state.notifications.error(
@@ -376,7 +348,7 @@ def run_import_behavior_data(event = None):
         logger.error(traceback.format_exc())
         pn.state.notifications.error(
             'Error: Please check logger for more info', duration = 4000)
-    
+        return
     return
                 
 #Plot behavior on a full trace
@@ -395,7 +367,7 @@ def run_plot_behavior(event = None):
                                               channel_selecta.value) 
             plot_beh_card.append(plot_pane) #Add figure to template
             if save_pdf_beh.value:
-                fig.write_image(objs + "_behavior_plot.pdf")
+                plot_pane.object.write_image(objs + "_behavior_plot.pdf")
                 print("Saved at: " + os.path.abspath(__file__))
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -432,9 +404,8 @@ def run_plot_zscore(event = None):
                                                         save_csv.value,
                                                         percent_bool.value) 
                     zscore_card.append(plot_pane) #Add figure to template
-
                     if save_pdf_PSTH.value:
-                        fig.write_image(objs + "_PSTH.pdf")
+                        plot_pane.object.write_image(objs + "_PSTH.pdf")
                         print("Saved at: " + os.path.abspath(__file__))
                 except Exception as e:
                     logger.error(traceback.format_exc())
@@ -463,7 +434,7 @@ def run_pearsons_correlation(event = None):
                                                      start, end)
         pearsons_card.append(plot_pane) #Add figure to template
         if save_pdf_time_corr.value:
-            fig.write_image(name1 + '_' + name2 + "_correlation.pdf")
+            plot_pane.object.write_image(name1 + '_' + name2 + "_correlation.pdf")
             print("Saved at: " + os.path.abspath(__file__))
     except ValueError:
         return
@@ -492,7 +463,7 @@ def run_beh_specific_pearsons(event = None):
                                                              behavior)
             beh_corr_card.append(plot_pane) #Add figure to template 
             if save_pdf_beh_corr.value:
-                fig.write_image(name1 + '_' + name2 + '_' + behavior + "_correlation.pdf")
+                plot_pane.object.write_image(name1 + '_' + name2 + '_' + behavior + "_correlation.pdf")
                 print("Saved at: " + os.path.abspath(__file__))
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -768,8 +739,7 @@ input_7 = pn.widgets.IntInput(name = 'Stop time from the beginning',
                               value = -1) #looking for better name
 fiber_num_row = pn.Row(input_2, npm_format)
 
-input_col = pn.Column(input_3, input_4,
-                      input_5, input_6, input_7)
+input_col = pn.Column(input_3, input_4, input_5)
 #Buttons
 upload_button = pn.widgets.Button(name = 'Create Object',
                                   button_type = 'primary',
